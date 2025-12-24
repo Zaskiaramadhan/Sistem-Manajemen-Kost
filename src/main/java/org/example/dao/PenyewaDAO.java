@@ -3,6 +3,7 @@ package org.example.dao;
 import org.example.model.Penyewa;
 import org.example.util.FileHandler;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -14,6 +15,7 @@ public class PenyewaDAO {
 
     private static PenyewaDAO instance;
     private List<Penyewa> penyewaList;
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private PenyewaDAO() {
         penyewaList = new ArrayList<>();
@@ -144,7 +146,29 @@ public class PenyewaDAO {
     public String getPenghuniByKamar(String idKamar) {
         return penyewaList.stream()
                 .filter(p -> "Aktif".equals(p.getStatus()) && p.getIdKamar().equals(idKamar))
-                .map(org.example.model.Penyewa::getNama)
+                .map(Penyewa::getNama)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Get nomor HP penghuni berdasarkan ID kamar
+     */
+    public String getNomorHPByKamar(String idKamar) {
+        return penyewaList.stream()
+                .filter(p -> "Aktif".equals(p.getStatus()) && p.getIdKamar().equals(idKamar))
+                .map(Penyewa::getNoHp)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Get tanggal masuk penghuni berdasarkan ID kamar
+     */
+    public String getTanggalMasukByKamar(String idKamar) {
+        return penyewaList.stream()
+                .filter(p -> "Aktif".equals(p.getStatus()) && p.getIdKamar().equals(idKamar))
+                .map(p -> p.getTanggalMasuk().format(DATE_FORMAT))
                 .findFirst()
                 .orElse(null);
     }
@@ -192,7 +216,4 @@ public class PenyewaDAO {
     public void refresh() {
         loadFromFile();
     }
-
-    // Tambahkan method ini ke PenyewaDAO.java
-
 }

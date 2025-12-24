@@ -58,7 +58,7 @@ public class KamarPanel extends JPanel {
         panel.setBackground(ColorPalette.BG_OFF_WHITE);
 
         // Title
-        JLabel titleLabel = new JLabel("KELOLA KAMAR");
+        JLabel titleLabel = new JLabel("Kelola Kamar");
         titleLabel.setFont(FontManager.FONT_H1);
         titleLabel.setForeground(ColorPalette.NAVY_DARK);
 
@@ -287,7 +287,7 @@ public class KamarPanel extends JPanel {
 
     private void showDetailDialog(Kamar kamar) {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Detail Kamar", true);
-        dialog.setSize(600, 700);
+        dialog.setSize(650, 750);
         dialog.setLocationRelativeTo(this);
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
@@ -325,26 +325,156 @@ public class KamarPanel extends JPanel {
                 }
             }
         };
-        imagePanel.setPreferredSize(new Dimension(560, 300));
+        imagePanel.setPreferredSize(new Dimension(610, 280));
         mainPanel.add(imagePanel, BorderLayout.NORTH);
 
-        // Info
+        // Info Panel
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
         infoPanel.setBackground(Color.WHITE);
-        infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        infoPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 10, 0));
 
-        String penghuni = "Terisi".equals(kamar.getStatus())
-                ? penyewaDAO.getPenghuniByKamar(kamar.getIdKamar())
-                : "-";
+        // Header dengan nomor kamar dan lantai
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        headerPanel.setBackground(Color.WHITE);
+        headerPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
 
-        infoPanel.add(createInfoRow("ID Kamar", kamar.getIdKamar()));
-        infoPanel.add(createInfoRow("Nomor Kamar", kamar.getNomorKamar()));
-        infoPanel.add(createInfoRow("Tipe", kamar.getTipe()));
-        infoPanel.add(createInfoRow("Harga", String.format("Rp %,.0f", kamar.getHarga())));
-        infoPanel.add(createInfoRow("Fasilitas", kamar.getFasilitas()));
-        infoPanel.add(createInfoRow("Status", kamar.getStatus()));
-        infoPanel.add(createInfoRow("Penghuni", penghuni));
+        JLabel headerLabel = new JLabel("KAMAR " + kamar.getNomorKamar() + " - Lantai 2");
+        headerLabel.setFont(FontManager.FONT_H3);
+        headerLabel.setForeground(ColorPalette.NAVY_DARK);
+        headerPanel.add(headerLabel);
+
+        infoPanel.add(headerPanel);
+        infoPanel.add(Box.createVerticalStrut(5));
+
+        // Separator line
+        JSeparator separator = new JSeparator();
+        separator.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
+        separator.setForeground(ColorPalette.GRAY_LIGHT);
+        infoPanel.add(separator);
+        infoPanel.add(Box.createVerticalStrut(15));
+
+        // Info rows with icons
+        infoPanel.add(createDetailRow("📐", "Tipe", kamar.getTipe() + " Room"));
+        infoPanel.add(Box.createVerticalStrut(8));
+
+        infoPanel.add(createDetailRow("💰", "Harga", String.format("Rp %,.0f / bulan", kamar.getHarga())));
+        infoPanel.add(Box.createVerticalStrut(8));
+
+        infoPanel.add(createDetailRow("📏", "Ukuran", "3 x 4 meter"));
+        infoPanel.add(Box.createVerticalStrut(8));
+
+        // Status dengan warna
+        JPanel statusRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        statusRow.setBackground(Color.WHITE);
+        statusRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+
+        JLabel statusIcon = new JLabel("📊");
+        statusIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        statusIcon.setPreferredSize(new Dimension(30, 25));
+
+        JLabel statusLabel = new JLabel("Status");
+        statusLabel.setFont(FontManager.FONT_BODY_LARGE);
+        statusLabel.setForeground(ColorPalette.GRAY_DARK);
+        statusLabel.setPreferredSize(new Dimension(120, 25));
+
+        JLabel colonStatus = new JLabel(": ");
+        colonStatus.setFont(FontManager.FONT_BODY_LARGE);
+
+        JLabel statusValue = new JLabel("Tersedia".equals(kamar.getStatus()) ? "[ ● TERSEDIA]" : "[ ● TERISI]");
+        statusValue.setFont(FontManager.FONT_BODY_LARGE);
+        statusValue.setForeground("Tersedia".equals(kamar.getStatus()) ? new Color(34, 197, 94) : new Color(239, 68, 68));
+
+        statusRow.add(statusIcon);
+        statusRow.add(statusLabel);
+        statusRow.add(colonStatus);
+        statusRow.add(statusValue);
+
+        infoPanel.add(statusRow);
+        infoPanel.add(Box.createVerticalStrut(15));
+
+        // Fasilitas section
+        JPanel fasilitasHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        fasilitasHeader.setBackground(Color.WHITE);
+        fasilitasHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+
+        JLabel fasilitasIcon = new JLabel("✨");
+        fasilitasIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        fasilitasIcon.setPreferredSize(new Dimension(30, 25));
+
+        JLabel fasilitasLabel = new JLabel("FASILITAS:");
+        fasilitasLabel.setFont(FontManager.FONT_BODY_LARGE.deriveFont(Font.BOLD));
+        fasilitasLabel.setForeground(ColorPalette.NAVY_DARK);
+
+        fasilitasHeader.add(fasilitasIcon);
+        fasilitasHeader.add(fasilitasLabel);
+        infoPanel.add(fasilitasHeader);
+        infoPanel.add(Box.createVerticalStrut(8));
+
+        // Parse fasilitas dan tampilkan per baris
+        String[] fasilitasArray = kamar.getFasilitas().split("\\+");
+        for (String fas : fasilitasArray) {
+            JPanel fasRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 30, 0));
+            fasRow.setBackground(Color.WHITE);
+            fasRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+
+            String icon = getFasilitasIcon(fas.trim());
+            JLabel fasIcon = new JLabel(icon);
+            fasIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
+            fasIcon.setPreferredSize(new Dimension(25, 20));
+
+            JLabel fasText = new JLabel(fas.trim());
+            fasText.setFont(FontManager.FONT_BODY);
+            fasText.setForeground(ColorPalette.GRAY_DARK);
+
+            fasRow.add(fasIcon);
+            fasRow.add(fasText);
+            infoPanel.add(fasRow);
+            infoPanel.add(Box.createVerticalStrut(3));
+        }
+
+        infoPanel.add(Box.createVerticalStrut(15));
+
+        // Penyewa section
+        JPanel penyewaHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        penyewaHeader.setBackground(Color.WHITE);
+        penyewaHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+
+        JLabel penyewaIcon = new JLabel("👤");
+        penyewaIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        penyewaIcon.setPreferredSize(new Dimension(30, 25));
+
+        JLabel penyewaLabel = new JLabel("PENYEWA SAAT INI:");
+        penyewaLabel.setFont(FontManager.FONT_BODY_LARGE.deriveFont(Font.BOLD));
+        penyewaLabel.setForeground(ColorPalette.NAVY_DARK);
+
+        penyewaHeader.add(penyewaIcon);
+        penyewaHeader.add(penyewaLabel);
+        infoPanel.add(penyewaHeader);
+        infoPanel.add(Box.createVerticalStrut(8));
+
+        if ("Terisi".equals(kamar.getStatus())) {
+            String nama = penyewaDAO.getPenghuniByKamar(kamar.getIdKamar());
+            String noHp = penyewaDAO.getNomorHPByKamar(kamar.getIdKamar());
+            String tanggal = penyewaDAO.getTanggalMasukByKamar(kamar.getIdKamar());
+
+            infoPanel.add(createPenyewaRow("Nama", nama != null ? nama : "-"));
+            infoPanel.add(Box.createVerticalStrut(5));
+            infoPanel.add(createPenyewaRow("No HP", noHp != null ? noHp : "-"));
+            infoPanel.add(Box.createVerticalStrut(5));
+            infoPanel.add(createPenyewaRow("Sejak", tanggal != null ? tanggal : "-"));
+        } else {
+            JPanel emptyRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 30, 0));
+            emptyRow.setBackground(Color.WHITE);
+            emptyRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+
+            JLabel emptyLabel = new JLabel("Kamar kosong, belum ada penyewa");
+            emptyLabel.setFont(FontManager.FONT_BODY);
+            emptyLabel.setForeground(ColorPalette.GRAY_DARK);
+
+            emptyRow.add(emptyLabel);
+            infoPanel.add(emptyRow);
+        }
 
         mainPanel.add(infoPanel, BorderLayout.CENTER);
 
@@ -375,6 +505,71 @@ public class KamarPanel extends JPanel {
 
         dialog.add(mainPanel);
         dialog.setVisible(true);
+    }
+
+    private JPanel createDetailRow(String icon, String label, String value) {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        row.setBackground(Color.WHITE);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+
+        JLabel iconLabel = new JLabel(icon);
+        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        iconLabel.setPreferredSize(new Dimension(30, 25));
+
+        JLabel labelComp = new JLabel(label);
+        labelComp.setFont(FontManager.FONT_BODY_LARGE);
+        labelComp.setForeground(ColorPalette.GRAY_DARK);
+        labelComp.setPreferredSize(new Dimension(120, 25));
+
+        JLabel colon = new JLabel(": ");
+        colon.setFont(FontManager.FONT_BODY_LARGE);
+
+        JLabel valueComp = new JLabel(value);
+        valueComp.setFont(FontManager.FONT_BODY_LARGE);
+        valueComp.setForeground(ColorPalette.NAVY_DARK);
+
+        row.add(iconLabel);
+        row.add(labelComp);
+        row.add(colon);
+        row.add(valueComp);
+
+        return row;
+    }
+
+    private JPanel createPenyewaRow(String label, String value) {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 30, 0));
+        row.setBackground(Color.WHITE);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+
+        JLabel labelComp = new JLabel(label);
+        labelComp.setFont(FontManager.FONT_BODY);
+        labelComp.setForeground(ColorPalette.GRAY_DARK);
+        labelComp.setPreferredSize(new Dimension(80, 20));
+
+        JLabel colon = new JLabel(": ");
+        colon.setFont(FontManager.FONT_BODY);
+
+        JLabel valueComp = new JLabel(value);
+        valueComp.setFont(FontManager.FONT_BODY);
+        valueComp.setForeground(ColorPalette.NAVY_DARK);
+
+        row.add(labelComp);
+        row.add(colon);
+        row.add(valueComp);
+
+        return row;
+    }
+
+    private String getFasilitasIcon(String fasilitas) {
+        String lower = fasilitas.toLowerCase();
+        if (lower.contains("AC")) return "❄️";
+        if (lower.contains("wifi")) return "📶";
+        if (lower.contains("kasur")) return "🛏️";
+        if (lower.contains("lemari")) return "🚪";
+        if (lower.contains("kamar mandi")) return "🚿";
+        if (lower.contains("meja Belajar")) return "📋";
+        if (lower.contains("kursi")) return "🪑";
+        return "✓";
     }
 
     private JPanel createInfoRow(String label, String value) {

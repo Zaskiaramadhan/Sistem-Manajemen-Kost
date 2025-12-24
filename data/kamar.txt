@@ -1,10 +1,10 @@
 K001,L01-101,Single,800000.00,AC + Kasur + Lemari,Tersedia,images/rooms/Double (1).jpg
 K002,L01-102,Double,1200000.00,AC + 2 Kasur + Lemari + Meja,Tersedia,images/rooms/Double (2).jpg
 K003,L01-103,Single,900000.00,AC + Kasur + Lemari + WiFi,Tersedia,images/rooms/Double (3).jpg
-K004,L01-104,Single,800000.00,AC + Kasur + Lemari,Kosong,images/rooms/Double (4).jpg
-K005,L02-105,Double,1000000.00,AC + 2 Kasur + Lemari,Terisi,images/rooms/Double (5).jpg
-K006,L02-106,Single,900000.00,AC + Kasur + Lemari + Meja Belajar,Kosong,images/rooms/Double (6).jpg
-K007,L02-107,VIP,1500000.00,AC + Kasur King + Lemari + TV + Kulkas,Terisi,images/rooms/Double (7).jpg
-K008,L02-108,Double,1100000.00,AC + 2 Kasur + Lemari + WiFi,Kosong,images/rooms/Double (8).jpg
-K009,L03-109,Single,850000.00,AC + Kasur + Lemari,Terisi,images/rooms/Double (9).jpg
-K010,L03-110,VIP,1400000.00,AC + Kasur Queen + Lemari + TV,Kosong,images/rooms/Double (10).jpg
+K004,L01-104,Single,800000.00,AC + Kasur + Lemari,Tersedia,images/rooms/Double (4).jpg
+K005,L02-105,Double,1000000.00,AC + 2 Kasur + Lemari,Tersedia,images/rooms/Double (5).jpg
+K006,L02-106,Single,900000.00,AC + Kasur + Lemari + Meja Belajar,Tersedia,images/rooms/Double (6).jpg
+K007,L02-107,Single,1500000.00,AC + Kasur King + Lemari + TV + Kulkas,Tersedia,images/rooms/Double (7).jpg
+K008,L02-108,Double,1100000.00,AC + 2 Kasur + Lemari + WiFi,Tersedia,images/rooms/Double (8).jpg
+K009,L03-109,Single,850000.00,AC + Kasur + Lemari,Tersedia,images/rooms/Double (9).jpg
+K010,L03-110,Single,1400000.00,AC + Kasur Queen + Lemari + TV,Tersedia,images/rooms/Double (10).jpg
