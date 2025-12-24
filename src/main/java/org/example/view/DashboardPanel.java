@@ -6,23 +6,28 @@ import org.example.config.AppConfig;
 import org.example.dao.KamarDAO;
 import org.example.dao.PenyewaDAO;
 import org.example.dao.PembayaranDAO;
+import org.example.model.Pembayaran;
+import org.example.model.Penyewa;
 import org.example.util.DateUtil;
 
 import javax.swing.*;
+import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Dashboard Panel - Halaman Utama
- * Menampilkan ringkasan statistik
- */
 public class DashboardPanel extends JPanel {
 
-    private JLabel totalKamarLabel;
-    private JLabel terisiLabel;
-    private JLabel kosongLabel;
+    private JLabel totalKamarValueLabel;
+    private JLabel terisiValueLabel;
+    private JLabel kosongValueLabel;
     private JLabel sudahBayarLabel;
     private JLabel belumBayarLabel;
     private JLabel totalPemasukanLabel;
+    private JPanel notificationPanel;
 
     public DashboardPanel() {
         initComponents();
@@ -43,14 +48,19 @@ public class DashboardPanel extends JPanel {
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBackground(ColorPalette.BG_OFF_WHITE);
 
-        // Statistik Kamar
-        JPanel statsKamarPanel = createStatsKamarPanel();
+        // Statistik Kamar dengan Gambar
+        JPanel statsKamarPanel = createStatsKamarWithImages();
         contentPanel.add(statsKamarPanel);
         contentPanel.add(Box.createVerticalStrut(20));
 
         // Statistik Pembayaran
         JPanel statsPembayaranPanel = createStatsPembayaranPanel();
         contentPanel.add(statsPembayaranPanel);
+        contentPanel.add(Box.createVerticalStrut(20));
+
+        // Notifikasi
+        notificationPanel = createNotificationPanel();
+        contentPanel.add(notificationPanel);
 
         add(contentPanel, BorderLayout.CENTER);
     }
@@ -58,9 +68,9 @@ public class DashboardPanel extends JPanel {
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(ColorPalette.BG_OFF_WHITE);
-        header.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        header.setBorder(BorderFactory.createEmptyBorder(0, 0, 25, 0));
 
-        JLabel titleLabel = new JLabel("🏠 Dashboard");
+        JLabel titleLabel = new JLabel("DASHBOARD");
         titleLabel.setFont(FontManager.FONT_H1);
         titleLabel.setForeground(ColorPalette.NAVY_DARK);
 
@@ -80,75 +90,164 @@ public class DashboardPanel extends JPanel {
         return header;
     }
 
-    private JPanel createStatsKamarPanel() {
+    private JPanel createStatsKamarWithImages() {
         JPanel panel = new JPanel(new GridLayout(1, 3, 20, 0));
         panel.setBackground(ColorPalette.BG_OFF_WHITE);
-        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
 
-        // Card Total Kamar
-        JPanel totalCard = createStatCard(
+        // Card Total Kamar - menggunakan icon-total.jpg
+        panel.add(createImageStatCard(
                 "Total Kamar",
                 "0",
                 ColorPalette.INFO_BLUE,
-                "totalKamar"
-        );
+                "total",
+                "images/icon-total.jpg"
+        ));
 
-        // Card Terisi
-        JPanel terisiCard = createStatCard(
+        // Card Terisi - menggunakan icon-terisi.jpg
+        panel.add(createImageStatCard(
                 "Kamar Terisi",
                 "0",
                 ColorPalette.DANGER_RED,
-                "terisi"
-        );
+                "terisi",
+                "images/icon-terisi.jpg"
+        ));
 
-        // Card Kosong
-        JPanel kosongCard = createStatCard(
+        // Card Tersedia - menggunakan icon-tersedia.jpg
+        panel.add(createImageStatCard(
                 "Kamar Tersedia",
                 "0",
                 ColorPalette.WARNING_ORANGE,
-                "kosong"
-        );
-
-        panel.add(totalCard);
-        panel.add(terisiCard);
-        panel.add(kosongCard);
+                "kosong",
+                "images/icon-tersedia.jpg"
+        ));
 
         return panel;
     }
 
+    private JPanel createImageStatCard(String title, String value, Color color, String id, String imagePath) {
+        // Panel dengan overlay gambar dan text di tengah
+        JPanel card = new JPanel() {
+            private BufferedImage bgImage;
+
+            {
+                try {
+                    File imgFile = new File(imagePath);
+                    if (imgFile.exists()) {
+                        bgImage = ImageIO.read(imgFile);
+                        System.out.println("✓ Berhasil memuat gambar: " + imagePath);
+                    } else {
+                        System.out.println("✗ File tidak ditemukan: " + imagePath);
+                    }
+                } catch (Exception e) {
+                    System.out.println("✗ Error membaca gambar: " + imagePath + " - " + e.getMessage());
+                }
+            }
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+                if (bgImage != null) {
+                    // Gambar background full size
+                    g2d.drawImage(bgImage, 0, 0, getWidth(), getHeight(), null);
+
+                    // Overlay semi-transparan untuk readability
+                    g2d.setColor(new Color(0, 0, 0, 130)); // Black with 40% opacity
+                    g2d.fillRect(0, 0, getWidth(), getHeight());
+                } else {
+                    // Fallback: colored background
+                    g2d.setColor(color);
+                    g2d.fillRect(0, 0, getWidth(), getHeight());
+                }
+            }
+        };
+
+        card.setLayout(new GridBagLayout());
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ColorPalette.BG_CREAM, 2),
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+
+        // Panel untuk text di tengah
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+        textPanel.setOpaque(false); // Transparent agar gambar terlihat
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(FontManager.FONT_BODY_LARGE);
+        titleLabel.setForeground(Color.WHITE); // Text putih agar kontras dengan gambar
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel valueLabel = new JLabel(value);
+        valueLabel.setFont(FontManager.FONT_NUMBER_BIG);
+        valueLabel.setForeground(Color.WHITE); // Text putih
+        valueLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Save reference
+        switch(id) {
+            case "total":
+                totalKamarValueLabel = valueLabel;
+                break;
+            case "terisi":
+                terisiValueLabel = valueLabel;
+                break;
+            case "kosong":
+                kosongValueLabel = valueLabel;
+                break;
+        }
+
+        textPanel.add(titleLabel);
+        textPanel.add(Box.createVerticalStrut(5));
+        textPanel.add(valueLabel);
+
+        // GridBagConstraints untuk center alignment
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.CENTER;
+
+        card.add(textPanel, gbc);
+
+        return card;
+    }
+
     private JPanel createStatsPembayaranPanel() {
         JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(Color.WHITE);
         panel.setBorder(AppConfig.createCardBorder());
-        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
 
         // Title
-        JLabel titleLabel = new JLabel("💰 Status Pembayaran - " + DateUtil.getCurrentMonthYear());
+        JLabel titleLabel = new JLabel("Status Pembayaran - " + DateUtil.getCurrentMonthYear());
         titleLabel.setFont(FontManager.FONT_H3);
         titleLabel.setForeground(ColorPalette.NAVY_DARK);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         panel.add(titleLabel);
-        panel.add(Box.createVerticalStrut(20));
+        panel.add(Box.createVerticalStrut(15));
 
         // Stats Grid
-        JPanel statsGrid = new JPanel(new GridLayout(3, 2, 15, 15));
+        JPanel statsGrid = new JPanel(new GridLayout(3, 2, 15, 10));
         statsGrid.setBackground(Color.WHITE);
         statsGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Sudah Bayar
-        statsGrid.add(createStatLabel("✅ Sudah Bayar:"));
-        sudahBayarLabel = createStatValueLabel("0 orang");
+        statsGrid.add(createStatLabel("Sudah Bayar:"));
+        sudahBayarLabel = createStatValueLabel("0 orang (0%)");
         statsGrid.add(sudahBayarLabel);
 
         // Belum Bayar
-        statsGrid.add(createStatLabel("⏳ Belum Bayar:"));
+        statsGrid.add(createStatLabel("Belum Bayar:"));
         belumBayarLabel = createStatValueLabel("0 orang");
         statsGrid.add(belumBayarLabel);
 
         // Total Pemasukan
-        statsGrid.add(createStatLabel("📈 Total Pemasukan:"));
+        statsGrid.add(createStatLabel("Total Pemasukan:"));
         totalPemasukanLabel = createStatValueLabel("Rp 0");
         statsGrid.add(totalPemasukanLabel);
 
@@ -157,50 +256,80 @@ public class DashboardPanel extends JPanel {
         return panel;
     }
 
-    private JPanel createStatCard(String title, String value, Color color, String id) {
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ColorPalette.BG_CREAM, 2),
-                BorderFactory.createEmptyBorder(20, 20, 20, 20)
-        ));
+    private JPanel createNotificationPanel() {
+        JPanel panel = new JPanel();
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(AppConfig.createCardBorder());
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
 
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(FontManager.FONT_BODY);
-        titleLabel.setForeground(ColorPalette.GRAY_DARK);
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel titleLabel = new JLabel("Notifikasi");
+        titleLabel.setFont(FontManager.FONT_H3);
+        titleLabel.setForeground(ColorPalette.NAVY_DARK);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel valueLabel = new JLabel(value);
-        valueLabel.setFont(FontManager.FONT_NUMBER_BIG);
-        valueLabel.setForeground(color);
-        valueLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(titleLabel);
+        panel.add(Box.createVerticalStrut(15));
 
-        // Save reference untuk update nanti
-        switch(id) {
-            case "totalKamar":
-                totalKamarLabel = valueLabel;
-                break;
-            case "terisi":
-                terisiLabel = valueLabel;
-                break;
-            case "kosong":
-                kosongLabel = valueLabel;
-                break;
+        return panel;
+    }
+
+    private void updateNotifications() {
+        // Clear previous notifications
+        Component[] components = notificationPanel.getComponents();
+        for (int i = components.length - 1; i > 0; i--) { // Keep title
+            notificationPanel.remove(i);
         }
 
-        card.add(Box.createVerticalGlue());
-        card.add(titleLabel);
-        card.add(Box.createVerticalStrut(10));
-        card.add(valueLabel);
-        card.add(Box.createVerticalGlue());
+        List<String> notifications = new ArrayList<>();
+        PenyewaDAO penyewaDAO = PenyewaDAO.getInstance();
+        PembayaranDAO pembayaranDAO = PembayaranDAO.getInstance();
+        KamarDAO kamarDAO = KamarDAO.getInstance();
 
-        return card;
+        String bulanIni = DateUtil.getCurrentMonthYear();
+        LocalDate today = LocalDate.now();
+
+        // Check pembayaran yang belum dibayar
+        for (Penyewa penyewa : penyewaDAO.getActivePenyewa()) {
+            boolean sudahBayar = pembayaranDAO.isPaid(penyewa.getIdPenyewa(), bulanIni);
+
+            if (!sudahBayar) {
+                String nomorKamar = kamarDAO.getById(penyewa.getIdKamar()).getNomorKamar();
+
+                // Check jika sudah lewat tanggal 5 (terlambat)
+                if (today.getDayOfMonth() > 5) {
+                    int hariTerlambat = today.getDayOfMonth() - 5;
+                    notifications.add("Kamar " + nomorKamar + " (" + penyewa.getNama() + ") - Pembayaran terlambat " + hariTerlambat + " hari");
+                } else if (today.getDayOfMonth() >= 3) {
+                    notifications.add("Kamar " + nomorKamar + " (" + penyewa.getNama() + ") - Pembayaran jatuh tempo dalam " + (5 - today.getDayOfMonth()) + " hari");
+                }
+            }
+        }
+
+        if (notifications.isEmpty()) {
+            JLabel noNotifLabel = new JLabel("Tidak ada notifikasi. Semua pembayaran lancar!");
+            noNotifLabel.setFont(FontManager.FONT_BODY);
+            noNotifLabel.setForeground(ColorPalette.SUCCESS_GREEN);
+            noNotifLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            notificationPanel.add(noNotifLabel);
+        } else {
+            for (String notif : notifications) {
+                JLabel notifLabel = new JLabel("• " + notif);
+                notifLabel.setFont(FontManager.FONT_BODY);
+                notifLabel.setForeground(ColorPalette.DANGER_RED);
+                notifLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                notificationPanel.add(notifLabel);
+                notificationPanel.add(Box.createVerticalStrut(8));
+            }
+        }
+
+        notificationPanel.revalidate();
+        notificationPanel.repaint();
     }
 
     private JLabel createStatLabel(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(FontManager.FONT_BODY);
+        label.setFont(FontManager.FONT_BODY_LARGE);
         label.setForeground(ColorPalette.GRAY_DARK);
         return label;
     }
@@ -212,9 +341,6 @@ public class DashboardPanel extends JPanel {
         return label;
     }
 
-    /**
-     * Refresh data dari database
-     */
     public void refreshData() {
         KamarDAO kamarDAO = KamarDAO.getInstance();
         PenyewaDAO penyewaDAO = PenyewaDAO.getInstance();
@@ -225,20 +351,26 @@ public class DashboardPanel extends JPanel {
         int terisi = kamarDAO.getOccupiedRooms();
         int kosong = kamarDAO.getAvailableRoomsCount();
 
-        totalKamarLabel.setText(String.valueOf(totalKamar));
-        terisiLabel.setText(String.valueOf(terisi));
-        kosongLabel.setText(String.valueOf(kosong));
+        totalKamarValueLabel.setText(String.valueOf(totalKamar));
+        terisiValueLabel.setText(String.valueOf(terisi));
+        kosongValueLabel.setText(String.valueOf(kosong));
 
         // Update statistik pembayaran bulan ini
         String bulanIni = DateUtil.getCurrentMonthYear();
         int totalPenyewa = penyewaDAO.getTotalActivePenyewa();
-        int sudahBayar = pembayaranDAO.getPaidThisMonth(bulanIni).size();
+        List<Pembayaran> pembayaranList = pembayaranDAO.getPaidThisMonth(bulanIni);
+        int sudahBayar = pembayaranList.size();
         int belumBayar = totalPenyewa - sudahBayar;
         double totalPemasukan = pembayaranDAO.getTotalIncomeByMonth(bulanIni);
 
-        sudahBayarLabel.setText(sudahBayar + " orang (" +
-                (totalPenyewa > 0 ? String.format("%.0f%%", (sudahBayar * 100.0 / totalPenyewa)) : "0%") + ")");
+        // Hitung persentase otomatis
+        double persenSudahBayar = totalPenyewa > 0 ? (sudahBayar * 100.0 / totalPenyewa) : 0;
+
+        sudahBayarLabel.setText(String.format("%d orang (%.0f%%)", sudahBayar, persenSudahBayar));
         belumBayarLabel.setText(belumBayar + " orang");
         totalPemasukanLabel.setText(String.format("Rp %,.0f", totalPemasukan));
+
+        // Update notifications
+        updateNotifications();
     }
 }

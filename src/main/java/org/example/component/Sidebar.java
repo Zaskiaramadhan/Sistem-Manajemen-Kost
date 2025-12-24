@@ -10,9 +10,6 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-/**
- * Sidebar Component - Navigation Menu
- */
 public class Sidebar extends JPanel {
 
     private MainFrame mainFrame;
@@ -39,11 +36,11 @@ public class Sidebar extends JPanel {
         menuPanel.setBackground(ColorPalette.NAVY_DARK);
         menuPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
 
-        addMenuItem("🏠  Dashboard", "dashboard");
-        addMenuItem("🏢  Kelola Kamar", "kamar");
-        addMenuItem("👥  Kelola Penyewa", "penyewa");
-        addMenuItem("💰  Pembayaran", "pembayaran");
-        addMenuItem("📊  Laporan", "laporan");
+        addMenuItem("Dashboard", "dashboard");
+        addMenuItem("Kelola Kamar", "kamar");
+        addMenuItem("Kelola Penyewa", "penyewa");
+        addMenuItem("Pembayaran", "pembayaran");
+        addMenuItem("Laporan", "laporan");
 
         add(menuPanel, BorderLayout.CENTER);
 
@@ -83,7 +80,7 @@ public class Sidebar extends JPanel {
         menuItem.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         JLabel label = new JLabel(text);
-        label.setFont(FontManager.FONT_BODY);
+        label.setFont(new Font(FontManager.FONT_PRIMARY, Font.PLAIN, 15));
         label.setForeground(ColorPalette.GRAY_LIGHT);
 
         menuItem.add(label, BorderLayout.CENTER);
