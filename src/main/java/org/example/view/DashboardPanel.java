@@ -59,8 +59,8 @@ public class DashboardPanel extends JPanel {
         contentPanel.add(Box.createVerticalStrut(20));
 
         // Notifikasi
-        notificationPanel = createNotificationPanel();
-        contentPanel.add(notificationPanel);
+        JPanel notifOuterPanel = createNotificationPanel();
+        contentPanel.add(notifOuterPanel);
 
         add(contentPanel, BorderLayout.CENTER);
     }
@@ -216,11 +216,14 @@ public class DashboardPanel extends JPanel {
     }
 
     private JPanel createStatsPembayaranPanel() {
+        JPanel outerPanel = new JPanel(new BorderLayout());
+        outerPanel.setBackground(ColorPalette.BG_OFF_WHITE);
+        outerPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 170));
+
         JPanel panel = new JPanel();
         panel.setBackground(Color.WHITE);
         panel.setBorder(AppConfig.createCardBorder());
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
 
         // Title
         JLabel titleLabel = new JLabel("Status Pembayaran - " + DateUtil.getCurrentMonthYear());
@@ -231,37 +234,47 @@ public class DashboardPanel extends JPanel {
         panel.add(titleLabel);
         panel.add(Box.createVerticalStrut(15));
 
-        // Stats Grid
-        JPanel statsGrid = new JPanel(new GridLayout(3, 2, 15, 10));
-        statsGrid.setBackground(Color.WHITE);
-        statsGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
+        // Stats Container
+        JPanel statsContainer = new JPanel();
+        statsContainer.setLayout(new BoxLayout(statsContainer, BoxLayout.Y_AXIS));
+        statsContainer.setBackground(Color.WHITE);
+        statsContainer.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Sudah Bayar
-        statsGrid.add(createStatLabel("Sudah Bayar:"));
+        JPanel row1 = createStatRow("Sudah Bayar");
         sudahBayarLabel = createStatValueLabel("0 orang (0%)");
-        statsGrid.add(sudahBayarLabel);
+        row1.add(sudahBayarLabel);
+        statsContainer.add(row1);
+        statsContainer.add(Box.createVerticalStrut(10));
 
         // Belum Bayar
-        statsGrid.add(createStatLabel("Belum Bayar:"));
+        JPanel row2 = createStatRow("Belum Bayar");
         belumBayarLabel = createStatValueLabel("0 orang");
-        statsGrid.add(belumBayarLabel);
+        row2.add(belumBayarLabel);
+        statsContainer.add(row2);
+        statsContainer.add(Box.createVerticalStrut(10));
 
         // Total Pemasukan
-        statsGrid.add(createStatLabel("Total Pemasukan:"));
+        JPanel row3 = createStatRow("Total Pemasukan");
         totalPemasukanLabel = createStatValueLabel("Rp 0");
-        statsGrid.add(totalPemasukanLabel);
+        row3.add(totalPemasukanLabel);
+        statsContainer.add(row3);
 
-        panel.add(statsGrid);
+        panel.add(statsContainer);
 
-        return panel;
+        outerPanel.add(panel, BorderLayout.CENTER);
+        return outerPanel;
     }
 
     private JPanel createNotificationPanel() {
+        JPanel outerPanel = new JPanel(new BorderLayout());
+        outerPanel.setBackground(ColorPalette.BG_OFF_WHITE);
+        outerPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
+
         JPanel panel = new JPanel();
         panel.setBackground(Color.WHITE);
         panel.setBorder(AppConfig.createCardBorder());
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
 
         JLabel titleLabel = new JLabel("Notifikasi");
         titleLabel.setFont(FontManager.FONT_H3);
@@ -271,7 +284,9 @@ public class DashboardPanel extends JPanel {
         panel.add(titleLabel);
         panel.add(Box.createVerticalStrut(15));
 
-        return panel;
+        outerPanel.add(panel, BorderLayout.CENTER);
+        notificationPanel = panel;
+        return outerPanel;
     }
 
     private void updateNotifications() {
@@ -325,6 +340,26 @@ public class DashboardPanel extends JPanel {
 
         notificationPanel.revalidate();
         notificationPanel.repaint();
+    }
+
+    private JPanel createStatRow(String labelText) {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        row.setBackground(Color.WHITE);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel label = new JLabel(labelText);
+        label.setFont(FontManager.FONT_BODY_LARGE);
+        label.setForeground(ColorPalette.GRAY_DARK);
+        label.setPreferredSize(new Dimension(150, 25)); // Fixed width untuk alignment
+
+        JLabel colon = new JLabel(": ");
+        colon.setFont(FontManager.FONT_BODY_LARGE);
+        colon.setForeground(ColorPalette.GRAY_DARK);
+
+        row.add(label);
+        row.add(colon);
+
+        return row;
     }
 
     private JLabel createStatLabel(String text) {

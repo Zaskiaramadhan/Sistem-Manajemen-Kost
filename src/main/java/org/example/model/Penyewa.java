@@ -72,4 +72,6 @@ public class Penyewa {
     public String toString() {
         return String.format("%s - %s", idPenyewa, nama);
     }
+
+    
 }

@@ -6,25 +6,30 @@ import org.example.config.AppConfig;
 import org.example.component.RButton;
 import org.example.model.Kamar;
 import org.example.dao.KamarDAO;
+import org.example.dao.PenyewaDAO;
 import org.example.util.ValidationUtil;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.DefaultTableCellRenderer;
+import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
-/**
- * Kamar Panel - Kelola Data Kamar
- */
 public class KamarPanel extends JPanel {
 
-    private JTable table;
-    private DefaultTableModel tableModel;
     private KamarDAO kamarDAO;
+    private PenyewaDAO penyewaDAO;
     private JTextField searchField;
+    private JComboBox<String> sortComboBox;
+    private JPanel cardContainer;
+    private List<Kamar> currentKamarList;
 
     public KamarPanel() {
         kamarDAO = KamarDAO.getInstance();
+        penyewaDAO = PenyewaDAO.getInstance();
         initComponents();
         refreshData();
     }
@@ -37,8 +42,15 @@ public class KamarPanel extends JPanel {
         // Header
         add(createHeaderPanel(), BorderLayout.NORTH);
 
-        // Table
-        add(createTablePanel(), BorderLayout.CENTER);
+        // Card Container with ScrollPane
+        cardContainer = new JPanel();
+        cardContainer.setLayout(new GridLayout(0, 3, 20, 20));
+        cardContainer.setBackground(ColorPalette.BG_OFF_WHITE);
+
+        JScrollPane scrollPane = new JScrollPane(cardContainer);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        add(scrollPane, BorderLayout.CENTER);
     }
 
     private JPanel createHeaderPanel() {
@@ -46,123 +58,352 @@ public class KamarPanel extends JPanel {
         panel.setBackground(ColorPalette.BG_OFF_WHITE);
 
         // Title
-        JLabel titleLabel = new JLabel("🏢 Kelola Kamar");
+        JLabel titleLabel = new JLabel("KELOLA KAMAR");
         titleLabel.setFont(FontManager.FONT_H1);
         titleLabel.setForeground(ColorPalette.NAVY_DARK);
 
-        // Button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        buttonPanel.setBackground(ColorPalette.BG_OFF_WHITE);
+        // Control panel (search, sort, buttons)
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        controlPanel.setBackground(ColorPalette.BG_OFF_WHITE);
 
         // Search
-        searchField = new JTextField(20);
+        JLabel searchLabel = new JLabel("Cari:");
+        searchLabel.setFont(FontManager.FONT_BODY);
+        searchLabel.setForeground(ColorPalette.GRAY_DARK);
+
+        searchField = new JTextField(15);
         searchField.setFont(FontManager.FONT_BODY);
         searchField.setBorder(AppConfig.createInputBorder());
         searchField.addActionListener(e -> searchKamar());
 
-        RButton searchButton = new RButton("🔍 Cari", RButton.ButtonType.SECONDARY);
+        RButton searchButton = new RButton("Cari", RButton.ButtonType.SECONDARY);
         searchButton.addActionListener(e -> searchKamar());
 
-        RButton addButton = new RButton("➕ Tambah Kamar");
+        // Sort
+        JLabel sortLabel = new JLabel("Sort:");
+        sortLabel.setFont(FontManager.FONT_BODY);
+        sortLabel.setForeground(ColorPalette.GRAY_DARK);
+
+        String[] sortOptions = {
+                "Nomor Kamar (Rendah-Tinggi)",
+                "Nomor Kamar (Tinggi-Rendah)",
+                "Harga (Rendah-Tinggi)",
+                "Harga (Tinggi-Rendah)",
+                "Status: Tersedia",
+                "Status: Terisi"
+        };
+        sortComboBox = new JComboBox<>(sortOptions);
+        sortComboBox.setFont(FontManager.FONT_BODY);
+        sortComboBox.addActionListener(e -> sortAndRefresh());
+
+        // Tambah Kamar button
+        RButton addButton = new RButton("Tambah Kamar");
         addButton.addActionListener(e -> showAddDialog());
 
-        buttonPanel.add(new JLabel("Cari:"));
-        buttonPanel.add(searchField);
-        buttonPanel.add(searchButton);
-        buttonPanel.add(addButton);
+        controlPanel.add(searchLabel);
+        controlPanel.add(searchField);
+        controlPanel.add(searchButton);
+        controlPanel.add(Box.createHorizontalStrut(10));
+        controlPanel.add(sortLabel);
+        controlPanel.add(sortComboBox);
+        controlPanel.add(addButton);
 
         panel.add(titleLabel, BorderLayout.WEST);
-        panel.add(buttonPanel, BorderLayout.EAST);
+        panel.add(controlPanel, BorderLayout.EAST);
 
         return panel;
     }
 
-    private JPanel createTablePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(AppConfig.createCardBorder());
+    private JPanel createKamarCard(Kamar kamar) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ColorPalette.GRAY_LIGHT, 1),
+                BorderFactory.createEmptyBorder(0, 0, 10, 0)
+        ));
+        card.setPreferredSize(new Dimension(300, 350));
 
-        // Table Model
-        String[] columns = {"ID", "No. Kamar", "Tipe", "Harga", "Fasilitas", "Status"};
-        tableModel = new DefaultTableModel(columns, 0) {
+        // Image Panel
+        JPanel imagePanel = new JPanel() {
+            private BufferedImage image;
+
+            {
+                try {
+                    String imagePath = kamar.getImagePath();
+                    if (imagePath != null && !imagePath.isEmpty()) {
+                        File imgFile = new File(imagePath);
+                        if (imgFile.exists()) {
+                            image = ImageIO.read(imgFile);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("Error loading image for " + kamar.getNomorKamar());
+                }
+            }
+
             @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+                if (image != null) {
+                    g2d.drawImage(image, 0, 0, getWidth(), getHeight(), null);
+                } else {
+                    // Placeholder
+                    g2d.setColor(ColorPalette.GRAY_LIGHT);
+                    g2d.fillRect(0, 0, getWidth(), getHeight());
+                    g2d.setColor(ColorPalette.GRAY_DARK);
+                    g2d.setFont(FontManager.FONT_BODY);
+                    String text = "No Image";
+                    FontMetrics fm = g2d.getFontMetrics();
+                    int x = (getWidth() - fm.stringWidth(text)) / 2;
+                    int y = (getHeight() + fm.getAscent()) / 2;
+                    g2d.drawString(text, x, y);
+                }
             }
         };
+        imagePanel.setPreferredSize(new Dimension(300, 180));
+        card.add(imagePanel, BorderLayout.NORTH);
 
-        table = new JTable(tableModel);
-        table.setFont(FontManager.FONT_BODY);
-        table.setRowHeight(AppConfig.TABLE_ROW_HEIGHT);
-        table.setSelectionBackground(ColorPalette.BG_CREAM);
-        table.setSelectionForeground(ColorPalette.NAVY_DARK);
-        table.setGridColor(ColorPalette.GRAY_LIGHT);
+        // Info Panel
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        infoPanel.setBackground(Color.WHITE);
+        infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 5, 15));
 
-        // Header styling
-        table.getTableHeader().setBackground(ColorPalette.NAVY_DARK);
-        table.getTableHeader().setForeground(Color.WHITE);
-        table.getTableHeader().setFont(FontManager.FONT_H4);
-        table.getTableHeader().setPreferredSize(new Dimension(0, 45));
+        // Room number
+        JLabel roomLabel = new JLabel(kamar.getNomorKamar());
+        roomLabel.setFont(FontManager.FONT_H3);
+        roomLabel.setForeground(ColorPalette.NAVY_DARK);
+        roomLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Column widths
-        table.getColumnModel().getColumn(0).setPreferredWidth(60);
-        table.getColumnModel().getColumn(1).setPreferredWidth(100);
-        table.getColumnModel().getColumn(2).setPreferredWidth(100);
-        table.getColumnModel().getColumn(3).setPreferredWidth(120);
-        table.getColumnModel().getColumn(4).setPreferredWidth(200);
-        table.getColumnModel().getColumn(5).setPreferredWidth(100);
+        // Type
+        JLabel typeLabel = new JLabel(kamar.getTipe() + " bed");
+        typeLabel.setFont(FontManager.FONT_BODY);
+        typeLabel.setForeground(ColorPalette.GRAY_DARK);
+        typeLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Status column renderer dengan warna
-        table.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value,
-                                                           boolean isSelected, boolean hasFocus, int row, int column) {
-                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        // Price
+        JLabel priceLabel = new JLabel(String.format("Rp %,.0f", kamar.getHarga()));
+        priceLabel.setFont(FontManager.FONT_NUMBER_MED);
+        priceLabel.setForeground(ColorPalette.NAVY_DARK);
+        priceLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-                if (!isSelected) {
-                    String status = (String) value;
-                    if ("Tersedia".equals(status)) {
-                        c.setForeground(ColorPalette.WARNING_ORANGE);
-                    } else if ("Terisi".equals(status)) {
-                        c.setForeground(ColorPalette.DANGER_RED);
-                    }
-                    setFont(FontManager.FONT_BUTTON);
+        infoPanel.add(roomLabel);
+        infoPanel.add(Box.createVerticalStrut(3));
+        infoPanel.add(typeLabel);
+        infoPanel.add(Box.createVerticalStrut(5));
+        infoPanel.add(priceLabel);
+
+        card.add(infoPanel, BorderLayout.CENTER);
+
+        // Button Panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        buttonPanel.setBackground(Color.WHITE);
+
+        // Status button
+        RButton statusButton;
+        if ("Tersedia".equals(kamar.getStatus())) {
+            statusButton = new RButton("Kosong", RButton.ButtonType.SUCCESS);
+        } else {
+            statusButton = new RButton("Terisi", RButton.ButtonType.DANGER);
+        }
+        statusButton.setEnabled(false);
+
+        // Detail button
+        RButton detailButton = new RButton("Detail", RButton.ButtonType.SECONDARY);
+        detailButton.addActionListener(e -> showDetailDialog(kamar));
+
+        buttonPanel.add(statusButton);
+        buttonPanel.add(detailButton);
+
+        card.add(buttonPanel, BorderLayout.SOUTH);
+
+        return card;
+    }
+
+    private void searchKamar() {
+        String keyword = searchField.getText().trim().toLowerCase();
+        currentKamarList.clear();
+
+        for (Kamar kamar : kamarDAO.getAll()) {
+            boolean matchesRoom = kamar.getNomorKamar().toLowerCase().contains(keyword);
+
+            // Search by penghuni name
+            boolean matchesPenghuni = false;
+            if ("Terisi".equals(kamar.getStatus())) {
+                String penghuni = penyewaDAO.getPenghuniByKamar(kamar.getIdKamar());
+                if (penghuni != null && penghuni.toLowerCase().contains(keyword)) {
+                    matchesPenghuni = true;
                 }
-
-                setHorizontalAlignment(CENTER);
-                return c;
             }
+
+            if (keyword.isEmpty() || matchesRoom || matchesPenghuni) {
+                currentKamarList.add(kamar);
+            }
+        }
+
+        sortAndRefresh();
+    }
+
+    private void sortAndRefresh() {
+        String sortOption = (String) sortComboBox.getSelectedItem();
+
+        switch (sortOption) {
+            case "Nomor Kamar (Rendah-Tinggi)":
+                currentKamarList.sort(Comparator.comparing(Kamar::getNomorKamar));
+                break;
+            case "Nomor Kamar (Tinggi-Rendah)":
+                currentKamarList.sort(Comparator.comparing(Kamar::getNomorKamar).reversed());
+                break;
+            case "Harga (Rendah-Tinggi)":
+                currentKamarList.sort(Comparator.comparingDouble(Kamar::getHarga));
+                break;
+            case "Harga (Tinggi-Rendah)":
+                currentKamarList.sort(Comparator.comparingDouble(Kamar::getHarga).reversed());
+                break;
+            case "Status: Tersedia":
+                currentKamarList.removeIf(k -> !"Tersedia".equals(k.getStatus()));
+                break;
+            case "Status: Terisi":
+                currentKamarList.removeIf(k -> !"Terisi".equals(k.getStatus()));
+                break;
+        }
+
+        displayCards();
+    }
+
+    private void displayCards() {
+        cardContainer.removeAll();
+
+        for (Kamar kamar : currentKamarList) {
+            cardContainer.add(createKamarCard(kamar));
+        }
+
+        cardContainer.revalidate();
+        cardContainer.repaint();
+    }
+
+    private void showDetailDialog(Kamar kamar) {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Detail Kamar", true);
+        dialog.setSize(600, 700);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Image
+        JPanel imagePanel = new JPanel() {
+            private BufferedImage image;
+
+            {
+                try {
+                    String imagePath = kamar.getImagePath();
+                    if (imagePath != null && !imagePath.isEmpty()) {
+                        File imgFile = new File(imagePath);
+                        if (imgFile.exists()) {
+                            image = ImageIO.read(imgFile);
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (image != null) {
+                    Graphics2D g2d = (Graphics2D) g;
+                    g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                    g2d.drawImage(image, 0, 0, getWidth(), getHeight(), null);
+                } else {
+                    g.setColor(ColorPalette.GRAY_LIGHT);
+                    g.fillRect(0, 0, getWidth(), getHeight());
+                }
+            }
+        };
+        imagePanel.setPreferredSize(new Dimension(560, 300));
+        mainPanel.add(imagePanel, BorderLayout.NORTH);
+
+        // Info
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        infoPanel.setBackground(Color.WHITE);
+        infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+
+        String penghuni = "Terisi".equals(kamar.getStatus())
+                ? penyewaDAO.getPenghuniByKamar(kamar.getIdKamar())
+                : "-";
+
+        infoPanel.add(createInfoRow("ID Kamar", kamar.getIdKamar()));
+        infoPanel.add(createInfoRow("Nomor Kamar", kamar.getNomorKamar()));
+        infoPanel.add(createInfoRow("Tipe", kamar.getTipe()));
+        infoPanel.add(createInfoRow("Harga", String.format("Rp %,.0f", kamar.getHarga())));
+        infoPanel.add(createInfoRow("Fasilitas", kamar.getFasilitas()));
+        infoPanel.add(createInfoRow("Status", kamar.getStatus()));
+        infoPanel.add(createInfoRow("Penghuni", penghuni));
+
+        mainPanel.add(infoPanel, BorderLayout.CENTER);
+
+        // Buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setBackground(Color.WHITE);
+
+        RButton editButton = new RButton("Edit", RButton.ButtonType.SECONDARY);
+        editButton.addActionListener(e -> {
+            dialog.dispose();
+            showEditDialog(kamar);
         });
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(null);
-        panel.add(scrollPane, BorderLayout.CENTER);
+        RButton deleteButton = new RButton("Hapus", RButton.ButtonType.DANGER);
+        deleteButton.addActionListener(e -> {
+            dialog.dispose();
+            deleteKamar(kamar);
+        });
 
-        // Action buttons panel
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        actionPanel.setBackground(Color.WHITE);
+        RButton closeButton = new RButton("Tutup", RButton.ButtonType.SECONDARY);
+        closeButton.addActionListener(e -> dialog.dispose());
 
-        RButton detailButton = new RButton("👁️ Detail", RButton.ButtonType.SECONDARY);
-        detailButton.addActionListener(e -> showDetailDialog());
+        buttonPanel.add(editButton);
+        buttonPanel.add(deleteButton);
+        buttonPanel.add(closeButton);
 
-        RButton editButton = new RButton("✏️ Edit", RButton.ButtonType.SECONDARY);
-        editButton.addActionListener(e -> showEditDialog());
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
-        RButton deleteButton = new RButton("🗑️ Hapus", RButton.ButtonType.DANGER);
-        deleteButton.addActionListener(e -> deleteKamar());
+        dialog.add(mainPanel);
+        dialog.setVisible(true);
+    }
 
-        actionPanel.add(detailButton);
-        actionPanel.add(editButton);
-        actionPanel.add(deleteButton);
+    private JPanel createInfoRow(String label, String value) {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 5));
+        row.setBackground(Color.WHITE);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
 
-        panel.add(actionPanel, BorderLayout.SOUTH);
+        JLabel labelComp = new JLabel(label);
+        labelComp.setFont(FontManager.FONT_BODY_LARGE);
+        labelComp.setForeground(ColorPalette.GRAY_DARK);
+        labelComp.setPreferredSize(new Dimension(150, 25));
 
-        return panel;
+        JLabel colon = new JLabel(": ");
+        colon.setFont(FontManager.FONT_BODY_LARGE);
+
+        JLabel valueComp = new JLabel(value);
+        valueComp.setFont(FontManager.FONT_BODY_LARGE);
+        valueComp.setForeground(ColorPalette.NAVY_DARK);
+
+        row.add(labelComp);
+        row.add(colon);
+        row.add(valueComp);
+
+        return row;
     }
 
     private void showAddDialog() {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Tambah Kamar", true);
-        dialog.setSize(500, 500);
+        dialog.setSize(500, 550);
         dialog.setLocationRelativeTo(this);
 
         JPanel panel = new JPanel();
@@ -170,12 +411,12 @@ public class KamarPanel extends JPanel {
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         panel.setBackground(Color.WHITE);
 
-        // Form fields
         JTextField nomorField = new JTextField();
         String[] tipeOptions = {"Single", "Double", "VIP"};
         JComboBox<String> tipeCombo = new JComboBox<>(tipeOptions);
         JTextField hargaField = new JTextField();
         JTextField fasilitasField = new JTextField();
+        JTextField imagePathField = new JTextField();
         String[] statusOptions = {"Tersedia", "Terisi"};
         JComboBox<String> statusCombo = new JComboBox<>(statusOptions);
 
@@ -183,21 +424,22 @@ public class KamarPanel extends JPanel {
         panel.add(createFormField("Tipe:", tipeCombo));
         panel.add(createFormField("Harga per Bulan:", hargaField));
         panel.add(createFormField("Fasilitas:", fasilitasField));
+        panel.add(createFormField("Path Gambar:", imagePathField));
         panel.add(createFormField("Status:", statusCombo));
 
-        // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setBackground(Color.WHITE);
 
-        RButton saveButton = new RButton("💾 Simpan");
+        RButton saveButton = new RButton("Simpan");
         saveButton.addActionListener(e -> {
-            if (validateAndSaveKamar(nomorField, tipeCombo, hargaField, fasilitasField, statusCombo, null)) {
+            if (validateAndSaveKamar(nomorField, tipeCombo, hargaField, fasilitasField,
+                    imagePathField, statusCombo, null)) {
                 dialog.dispose();
                 refreshData();
             }
         });
 
-        RButton cancelButton = new RButton("❌ Batal", RButton.ButtonType.SECONDARY);
+        RButton cancelButton = new RButton("Batal", RButton.ButtonType.SECONDARY);
         cancelButton.addActionListener(e -> dialog.dispose());
 
         buttonPanel.add(cancelButton);
@@ -208,20 +450,9 @@ public class KamarPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    private void showEditDialog() {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Pilih kamar yang akan diedit!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String idKamar = (String) tableModel.getValueAt(selectedRow, 0);
-        Kamar kamar = kamarDAO.getById(idKamar);
-
-        if (kamar == null) return;
-
+    private void showEditDialog(Kamar kamar) {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Edit Kamar", true);
-        dialog.setSize(500, 500);
+        dialog.setSize(500, 550);
         dialog.setLocationRelativeTo(this);
 
         JPanel panel = new JPanel();
@@ -235,6 +466,7 @@ public class KamarPanel extends JPanel {
         tipeCombo.setSelectedItem(kamar.getTipe());
         JTextField hargaField = new JTextField(String.valueOf((int)kamar.getHarga()));
         JTextField fasilitasField = new JTextField(kamar.getFasilitas());
+        JTextField imagePathField = new JTextField(kamar.getImagePath());
         String[] statusOptions = {"Tersedia", "Terisi"};
         JComboBox<String> statusCombo = new JComboBox<>(statusOptions);
         statusCombo.setSelectedItem(kamar.getStatus());
@@ -243,20 +475,22 @@ public class KamarPanel extends JPanel {
         panel.add(createFormField("Tipe:", tipeCombo));
         panel.add(createFormField("Harga per Bulan:", hargaField));
         panel.add(createFormField("Fasilitas:", fasilitasField));
+        panel.add(createFormField("Path Gambar:", imagePathField));
         panel.add(createFormField("Status:", statusCombo));
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setBackground(Color.WHITE);
 
-        RButton saveButton = new RButton("💾 Simpan");
+        RButton saveButton = new RButton("Simpan");
         saveButton.addActionListener(e -> {
-            if (validateAndSaveKamar(nomorField, tipeCombo, hargaField, fasilitasField, statusCombo, idKamar)) {
+            if (validateAndSaveKamar(nomorField, tipeCombo, hargaField, fasilitasField,
+                    imagePathField, statusCombo, kamar.getIdKamar())) {
                 dialog.dispose();
                 refreshData();
             }
         });
 
-        RButton cancelButton = new RButton("❌ Batal", RButton.ButtonType.SECONDARY);
+        RButton cancelButton = new RButton("Batal", RButton.ButtonType.SECONDARY);
         cancelButton.addActionListener(e -> dialog.dispose());
 
         buttonPanel.add(cancelButton);
@@ -267,39 +501,8 @@ public class KamarPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    private void showDetailDialog() {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Pilih kamar untuk melihat detail!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String idKamar = (String) tableModel.getValueAt(selectedRow, 0);
-        Kamar kamar = kamarDAO.getById(idKamar);
-
-        if (kamar == null) return;
-
-        String detail = String.format(
-                "ID Kamar: %s\nNomor Kamar: %s\nTipe: %s\nHarga: Rp %,.0f\nFasilitas: %s\nStatus: %s",
-                kamar.getIdKamar(), kamar.getNomorKamar(), kamar.getTipe(),
-                kamar.getHarga(), kamar.getFasilitas(), kamar.getStatus()
-        );
-
-        JOptionPane.showMessageDialog(this, detail, "Detail Kamar", JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    private void deleteKamar() {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Pilih kamar yang akan dihapus!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String idKamar = (String) tableModel.getValueAt(selectedRow, 0);
-        String nomorKamar = (String) tableModel.getValueAt(selectedRow, 1);
-        String status = (String) tableModel.getValueAt(selectedRow, 5);
-
-        if ("Terisi".equals(status)) {
+    private void deleteKamar(Kamar kamar) {
+        if ("Terisi".equals(kamar.getStatus())) {
             JOptionPane.showMessageDialog(this,
                     "Tidak dapat menghapus kamar yang sedang terisi!",
                     "Error", JOptionPane.ERROR_MESSAGE);
@@ -307,12 +510,12 @@ public class KamarPanel extends JPanel {
         }
 
         int confirm = JOptionPane.showConfirmDialog(this,
-                "Hapus kamar " + nomorKamar + "?",
+                "Hapus kamar " + kamar.getNomorKamar() + "?",
                 "Konfirmasi Hapus",
                 JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            if (kamarDAO.delete(idKamar)) {
+            if (kamarDAO.delete(kamar.getIdKamar())) {
                 JOptionPane.showMessageDialog(this, "Kamar berhasil dihapus!");
                 refreshData();
             } else {
@@ -322,21 +525,27 @@ public class KamarPanel extends JPanel {
     }
 
     private boolean validateAndSaveKamar(JTextField nomorField, JComboBox<String> tipeCombo,
-                                         JTextField hargaField, JTextField fasilitasField, JComboBox<String> statusCombo, String editId) {
+                                         JTextField hargaField, JTextField fasilitasField,
+                                         JTextField imagePathField, JComboBox<String> statusCombo,
+                                         String editId) {
 
         String nomor = nomorField.getText().trim();
         String tipe = (String) tipeCombo.getSelectedItem();
         String hargaStr = hargaField.getText().trim();
         String fasilitas = fasilitasField.getText().trim();
+        String imagePath = imagePathField.getText().trim();
         String status = (String) statusCombo.getSelectedItem();
 
-        if (!ValidationUtil.isNotEmpty(nomor) || !ValidationUtil.isNotEmpty(hargaStr) || !ValidationUtil.isNotEmpty(fasilitas)) {
-            JOptionPane.showMessageDialog(this, "Semua field harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
+        if (!ValidationUtil.isNotEmpty(nomor) || !ValidationUtil.isNotEmpty(hargaStr) ||
+                !ValidationUtil.isNotEmpty(fasilitas)) {
+            JOptionPane.showMessageDialog(this, "Nomor, harga, dan fasilitas harus diisi!",
+                    "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
 
         if (!ValidationUtil.isValidPositiveNumber(hargaStr)) {
-            JOptionPane.showMessageDialog(this, "Harga harus berupa angka positif!", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Harga harus berupa angka positif!",
+                    "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
 
@@ -349,20 +558,17 @@ public class KamarPanel extends JPanel {
         kamar.setHarga(harga);
         kamar.setFasilitas(fasilitas);
         kamar.setStatus(status);
-        kamar.setImagePath("");
+        kamar.setImagePath(imagePath);
 
-        boolean success;
-        if (editId != null) {
-            success = kamarDAO.update(kamar);
-        } else {
-            success = kamarDAO.create(kamar);
-        }
+        boolean success = editId != null ? kamarDAO.update(kamar) : kamarDAO.create(kamar);
 
         if (success) {
-            JOptionPane.showMessageDialog(this, editId != null ? "Kamar berhasil diupdate!" : "Kamar berhasil ditambahkan!");
+            JOptionPane.showMessageDialog(this,
+                    editId != null ? "Kamar berhasil diupdate!" : "Kamar berhasil ditambahkan!");
             return true;
         } else {
-            JOptionPane.showMessageDialog(this, "Gagal menyimpan kamar!", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Gagal menyimpan kamar!",
+                    "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
     }
@@ -391,42 +597,8 @@ public class KamarPanel extends JPanel {
         return panel;
     }
 
-    private void searchKamar() {
-        String keyword = searchField.getText().trim().toLowerCase();
-        tableModel.setRowCount(0);
-
-        for (Kamar kamar : kamarDAO.getAll()) {
-            if (keyword.isEmpty() ||
-                    kamar.getNomorKamar().toLowerCase().contains(keyword) ||
-                    kamar.getTipe().toLowerCase().contains(keyword) ||
-                    kamar.getStatus().toLowerCase().contains(keyword)) {
-
-                Object[] row = {
-                        kamar.getIdKamar(),
-                        kamar.getNomorKamar(),
-                        kamar.getTipe(),
-                        String.format("Rp %,.0f", kamar.getHarga()),
-                        kamar.getFasilitas(),
-                        kamar.getStatus()
-                };
-                tableModel.addRow(row);
-            }
-        }
-    }
-
     public void refreshData() {
-        tableModel.setRowCount(0);
-
-        for (Kamar kamar : kamarDAO.getAll()) {
-            Object[] row = {
-                    kamar.getIdKamar(),
-                    kamar.getNomorKamar(),
-                    kamar.getTipe(),
-                    String.format("Rp %,.0f", kamar.getHarga()),
-                    kamar.getFasilitas(),
-                    kamar.getStatus()
-            };
-            tableModel.addRow(row);
-        }
+        currentKamarList = new ArrayList<>(kamarDAO.getAll());
+        sortAndRefresh();
     }
 }

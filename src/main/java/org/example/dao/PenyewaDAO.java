@@ -139,6 +139,17 @@ public class PenyewaDAO {
     }
 
     /**
+     * Get nama penghuni berdasarkan ID kamar
+     */
+    public String getPenghuniByKamar(String idKamar) {
+        return penyewaList.stream()
+                .filter(p -> "Aktif".equals(p.getStatus()) && p.getIdKamar().equals(idKamar))
+                .map(org.example.model.Penyewa::getNama)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
      * Get total penyewa aktif
      */
     public int getTotalActivePenyewa() {
@@ -181,4 +192,7 @@ public class PenyewaDAO {
     public void refresh() {
         loadFromFile();
     }
+
+    // Tambahkan method ini ke PenyewaDAO.java
+
 }

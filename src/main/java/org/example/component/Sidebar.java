@@ -165,7 +165,7 @@ public class Sidebar extends JPanel {
         footer.setBorder(BorderFactory.createEmptyBorder(20, 20, 30, 20));
         footer.setLayout(new BorderLayout());
 
-        JButton logoutButton = new JButton("🚪 Logout");
+        JButton logoutButton = new JButton("Logout");
         logoutButton.setFont(FontManager.FONT_BODY);
         logoutButton.setForeground(ColorPalette.GRAY_LIGHT);
         logoutButton.setBackground(ColorPalette.NAVY_DARK);
