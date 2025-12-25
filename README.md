@@ -1,43 +1,32 @@
 🏠 Sistem Manajemen Kost / Boarding House (RUMA)
 
-Sistem Manajemen Kost RUMA adalah aplikasi desktop berbasis Java Swing yang dirancang untuk membantu pengelola kost dalam mengelola data kamar, penyewa, pembayaran, dashboard statistik, serta laporan bulanan secara terstruktur dan efisien.
-Aplikasi ini menerapkan konsep Object-Oriented Programming (OOP), arsitektur modular (MVC/Layered), serta penyimpanan data berbasis file sebagai simulasi sistem manajemen kost skala kecil–menengah.
+Sistem Manajemen Kost RUMA adalah aplikasi desktop berbasis Java Swing yang dirancang untuk membantu pengelola kost dalam mengelola data kamar, penyewa, pembayaran, dashboard statistik, serta laporan bulanan secara terstruktur dan efisien. Aplikasi ini menerapkan konsep Object-Oriented Programming (OOP), arsitektur modular (MVC/Layered), serta penyimpanan data berbasis file.
+
+___
 
 📌 Fitur Utama
 🔐 Login & Keamanan Dasar
 
 Halaman login dengan tampilan modern (custom UI).
-
 Validasi input username & password.
-
 Autentikasi sederhana (hardcoded untuk demo).
-
 Redirect otomatis ke Main Dashboard setelah login berhasil.
-
+___
 📊 Dashboard
 
 Ringkasan jumlah kamar:
 
 Total kamar
-
 Kamar terisi
-
 Kamar tersedia
-
 Statistik pembayaran bulan berjalan:
-
 Jumlah penyewa sudah bayar
-
 Jumlah penyewa belum bayar
-
 Total pemasukan
-
 Sistem notifikasi otomatis:
-
 Pengingat jatuh tempo pembayaran
-
 Notifikasi keterlambatan pembayaran
-
+___
 🏠 Manajemen Kamar
 
 Data kamar meliputi:
