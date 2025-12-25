@@ -8,30 +8,31 @@ import org.example.model.Penyewa;
 import org.example.model.Kamar;
 import org.example.dao.PenyewaDAO;
 import org.example.dao.KamarDAO;
+import org.example.dao.PembayaranDAO;
 import org.example.util.ValidationUtil;
 import org.example.util.DateUtil;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
-/**
- * Penyewa Panel - Kelola Data Penyewa
- */
 public class PenyewaPanel extends JPanel {
 
-    private JTable table;
-    private DefaultTableModel tableModel;
     private PenyewaDAO penyewaDAO;
     private KamarDAO kamarDAO;
+    private PembayaranDAO pembayaranDAO;
     private JTextField searchField;
+    private JComboBox<String> filterComboBox;
+    private JPanel cardContainer;
+    private List<Penyewa> currentPenyewaList;
 
     public PenyewaPanel() {
         penyewaDAO = PenyewaDAO.getInstance();
         kamarDAO = KamarDAO.getInstance();
+        pembayaranDAO = PembayaranDAO.getInstance();
         initComponents();
         refreshData();
     }
@@ -42,123 +43,304 @@ public class PenyewaPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
         add(createHeaderPanel(), BorderLayout.NORTH);
-        add(createTablePanel(), BorderLayout.CENTER);
+
+        cardContainer = new JPanel();
+        cardContainer.setLayout(new GridLayout(0, 4, 15, 15));
+        cardContainer.setBackground(ColorPalette.BG_OFF_WHITE);
+
+        JScrollPane scrollPane = new JScrollPane(cardContainer);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        add(scrollPane, BorderLayout.CENTER);
     }
 
     private JPanel createHeaderPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(ColorPalette.BG_OFF_WHITE);
 
-        JLabel titleLabel = new JLabel("👥 Kelola Penyewa");
+        JLabel titleLabel = new JLabel("Kelola Penyewa");
         titleLabel.setFont(FontManager.FONT_H1);
         titleLabel.setForeground(ColorPalette.NAVY_DARK);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        buttonPanel.setBackground(ColorPalette.BG_OFF_WHITE);
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        controlPanel.setBackground(ColorPalette.BG_OFF_WHITE);
 
-        searchField = new JTextField(20);
+        JLabel searchLabel = new JLabel("Cari:");
+        searchLabel.setFont(FontManager.FONT_BODY);
+        searchLabel.setForeground(ColorPalette.GRAY_DARK);
+
+        searchField = new JTextField(15);
         searchField.setFont(FontManager.FONT_BODY);
         searchField.setBorder(AppConfig.createInputBorder());
         searchField.addActionListener(e -> searchPenyewa());
 
-        RButton searchButton = new RButton("🔍 Cari", RButton.ButtonType.SECONDARY);
+        RButton searchButton = new RButton("Cari", RButton.ButtonType.SECONDARY);
         searchButton.addActionListener(e -> searchPenyewa());
 
-        RButton addButton = new RButton("➕ Tambah Penyewa");
+        JLabel filterLabel = new JLabel("Filter:");
+        filterLabel.setFont(FontManager.FONT_BODY);
+        filterLabel.setForeground(ColorPalette.GRAY_DARK);
+
+        String[] filterOptions = {
+                "Semua Status",
+                "Sudah Bayar",
+                "Belum Bayar",
+                "Terlambat"
+        };
+        filterComboBox = new JComboBox<>(filterOptions);
+        filterComboBox.setFont(FontManager.FONT_BODY);
+        filterComboBox.addActionListener(e -> filterAndRefresh());
+
+        RButton addButton = new RButton("Tambah Penyewa");
         addButton.addActionListener(e -> showAddDialog());
 
-        buttonPanel.add(new JLabel("Cari:"));
-        buttonPanel.add(searchField);
-        buttonPanel.add(searchButton);
-        buttonPanel.add(addButton);
+        controlPanel.add(searchLabel);
+        controlPanel.add(searchField);
+        controlPanel.add(searchButton);
+        controlPanel.add(Box.createHorizontalStrut(10));
+        controlPanel.add(filterLabel);
+        controlPanel.add(filterComboBox);
+        controlPanel.add(addButton);
 
         panel.add(titleLabel, BorderLayout.WEST);
-        panel.add(buttonPanel, BorderLayout.EAST);
+        panel.add(controlPanel, BorderLayout.EAST);
 
         return panel;
     }
 
-    private JPanel createTablePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(AppConfig.createCardBorder());
+    private JPanel createPenyewaCard(Penyewa penyewa) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ColorPalette.GRAY_LIGHT, 1),
+                BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
 
-        String[] columns = {"ID", "Nama", "No HP", "Email", "Kamar", "Tanggal Masuk", "Status"};
-        tableModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
+        Kamar kamar = kamarDAO.getById(penyewa.getIdKamar());
+        if (kamar == null) {
+            return card;
+        }
+
+        // Info Panel
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        infoPanel.setBackground(Color.WHITE);
+
+        // ID
+        JLabel idLabel = new JLabel(penyewa.getIdPenyewa());
+        idLabel.setFont(FontManager.FONT_H4);
+        idLabel.setForeground(ColorPalette.GRAY_DARK);
+        idLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Nama
+        JLabel namaLabel = new JLabel(penyewa.getNama());
+        namaLabel.setFont(FontManager.FONT_H3);
+        namaLabel.setForeground(ColorPalette.NAVY_DARK);
+        namaLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Kamar
+        JLabel kamarLabel = new JLabel("Kamar: " + kamar.getNomorKamar());
+        kamarLabel.setFont(FontManager.FONT_BODY);
+        kamarLabel.setForeground(ColorPalette.GRAY_DARK);
+        kamarLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // No HP
+        JLabel hpLabel = new JLabel("HP: " + penyewa.getNoHp());
+        hpLabel.setFont(FontManager.FONT_BODY);
+        hpLabel.setForeground(ColorPalette.GRAY_DARK);
+        hpLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Status Pembayaran
+        String bulanIni = DateUtil.getCurrentMonthYear();
+        boolean sudahBayar = pembayaranDAO.isPaid(penyewa.getIdPenyewa(), bulanIni);
+        LocalDate today = LocalDate.now();
+        boolean terlambat = !sudahBayar && today.getDayOfMonth() > 5;
+
+        JLabel statusLabel;
+        if (sudahBayar) {
+            statusLabel = new JLabel("✓ Sudah Bayar");
+            statusLabel.setForeground(ColorPalette.SUCCESS_GREEN);
+        } else if (terlambat) {
+            statusLabel = new JLabel("✗ Terlambat");
+            statusLabel.setForeground(ColorPalette.DANGER_RED);
+        } else {
+            statusLabel = new JLabel("⊙ Belum Bayar");
+            statusLabel.setForeground(ColorPalette.WARNING_ORANGE);
+        }
+        statusLabel.setFont(FontManager.FONT_BODY.deriveFont(Font.BOLD));
+        statusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        infoPanel.add(idLabel);
+        infoPanel.add(Box.createVerticalStrut(5));
+        infoPanel.add(namaLabel);
+        infoPanel.add(Box.createVerticalStrut(8));
+        infoPanel.add(kamarLabel);
+        infoPanel.add(Box.createVerticalStrut(3));
+        infoPanel.add(hpLabel);
+        infoPanel.add(Box.createVerticalStrut(8));
+        infoPanel.add(statusLabel);
+
+        card.add(infoPanel, BorderLayout.CENTER);
+
+        // Button Panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        buttonPanel.setBackground(Color.WHITE);
+
+        RButton detailButton = new RButton("Detail", RButton.ButtonType.SECONDARY);
+        detailButton.addActionListener(e -> showDetailDialog(penyewa));
+
+        buttonPanel.add(detailButton);
+
+        card.add(buttonPanel, BorderLayout.SOUTH);
+
+        return card;
+    }
+
+    private void searchPenyewa() {
+        String keyword = searchField.getText().trim().toLowerCase();
+        currentPenyewaList.clear();
+
+        for (Penyewa penyewa : penyewaDAO.getActivePenyewa()) {
+            Kamar kamar = kamarDAO.getById(penyewa.getIdKamar());
+            if (kamar == null) continue;
+
+            if (keyword.isEmpty() ||
+                    penyewa.getNama().toLowerCase().contains(keyword) ||
+                    kamar.getNomorKamar().toLowerCase().contains(keyword)) {
+                currentPenyewaList.add(penyewa);
             }
-        };
+        }
 
-        table = new JTable(tableModel);
-        table.setFont(FontManager.FONT_BODY);
-        table.setRowHeight(AppConfig.TABLE_ROW_HEIGHT);
-        table.setSelectionBackground(ColorPalette.BG_CREAM);
-        table.setSelectionForeground(ColorPalette.NAVY_DARK);
-        table.setGridColor(ColorPalette.GRAY_LIGHT);
+        filterAndRefresh();
+    }
 
-        table.getTableHeader().setBackground(ColorPalette.NAVY_DARK);
-        table.getTableHeader().setForeground(Color.WHITE);
-        table.getTableHeader().setFont(FontManager.FONT_H4);
-        table.getTableHeader().setPreferredSize(new Dimension(0, 45));
+    private void filterAndRefresh() {
+        String filterOption = (String) filterComboBox.getSelectedItem();
+        String bulanIni = DateUtil.getCurrentMonthYear();
+        LocalDate today = LocalDate.now();
 
-        table.getColumnModel().getColumn(0).setPreferredWidth(70);
-        table.getColumnModel().getColumn(1).setPreferredWidth(150);
-        table.getColumnModel().getColumn(2).setPreferredWidth(120);
-        table.getColumnModel().getColumn(3).setPreferredWidth(180);
-        table.getColumnModel().getColumn(4).setPreferredWidth(80);
-        table.getColumnModel().getColumn(5).setPreferredWidth(120);
-        table.getColumnModel().getColumn(6).setPreferredWidth(100);
+        List<Penyewa> filteredList = new ArrayList<>(currentPenyewaList);
 
-        // Status renderer
-        table.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value,
-                                                           boolean isSelected, boolean hasFocus, int row, int column) {
-                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        if (!"Semua Status".equals(filterOption)) {
+            filteredList.removeIf(penyewa -> {
+                boolean sudahBayar = pembayaranDAO.isPaid(penyewa.getIdPenyewa(), bulanIni);
+                boolean terlambat = !sudahBayar && today.getDayOfMonth() > 5;
 
-                if (!isSelected) {
-                    String status = (String) value;
-                    if ("Aktif".equals(status)) {
-                        c.setForeground(ColorPalette.SUCCESS_GREEN);
-                    } else {
-                        c.setForeground(ColorPalette.GRAY_MEDIUM);
-                    }
-                    setFont(FontManager.FONT_BUTTON);
+                switch (filterOption) {
+                    case "Sudah Bayar":
+                        return !sudahBayar;
+                    case "Belum Bayar":
+                        return sudahBayar || terlambat;
+                    case "Terlambat":
+                        return !terlambat;
+                    default:
+                        return false;
                 }
-                setHorizontalAlignment(CENTER);
-                return c;
-            }
+            });
+        }
+
+        displayCards(filteredList);
+    }
+
+    private void displayCards(List<Penyewa> penyewaList) {
+        cardContainer.removeAll();
+
+        for (Penyewa penyewa : penyewaList) {
+            cardContainer.add(createPenyewaCard(penyewa));
+        }
+
+        cardContainer.revalidate();
+        cardContainer.repaint();
+    }
+
+    private void showDetailDialog(Penyewa penyewa) {
+        Kamar kamar = kamarDAO.getById(penyewa.getIdKamar());
+        if (kamar == null) return;
+
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Detail Penyewa", true);
+        dialog.setSize(500, 450);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel titleLabel = new JLabel("DETAIL PENYEWA");
+        titleLabel.setFont(FontManager.FONT_H2);
+        titleLabel.setForeground(ColorPalette.NAVY_DARK);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        mainPanel.add(titleLabel);
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        JSeparator separator = new JSeparator();
+        separator.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
+        mainPanel.add(separator);
+        mainPanel.add(Box.createVerticalStrut(15));
+
+        mainPanel.add(createInfoRow("ID Penyewa", penyewa.getIdPenyewa()));
+        mainPanel.add(createInfoRow("Nama Lengkap", penyewa.getNama()));
+        mainPanel.add(createInfoRow("No HP", penyewa.getNoHp()));
+        mainPanel.add(createInfoRow("Kamar", kamar.getNomorKamar() + " (" + kamar.getTipe() + ")"));
+        mainPanel.add(createInfoRow("Tanggal Masuk", DateUtil.formatDate(penyewa.getTanggalMasuk())));
+        mainPanel.add(createInfoRow("Status", penyewa.getStatus()));
+
+        mainPanel.add(Box.createVerticalStrut(20));
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+
+        RButton editButton = new RButton("Edit", RButton.ButtonType.SECONDARY);
+        editButton.addActionListener(e -> {
+            dialog.dispose();
+            showEditDialog(penyewa);
         });
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(null);
-        panel.add(scrollPane, BorderLayout.CENTER);
+        RButton deleteButton = new RButton("Hapus", RButton.ButtonType.DANGER);
+        deleteButton.addActionListener(e -> {
+            dialog.dispose();
+            deletePenyewa(penyewa);
+        });
 
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        actionPanel.setBackground(Color.WHITE);
+        RButton closeButton = new RButton("Tutup", RButton.ButtonType.SECONDARY);
+        closeButton.addActionListener(e -> dialog.dispose());
 
-        RButton detailButton = new RButton("👁️ Detail", RButton.ButtonType.SECONDARY);
-        detailButton.addActionListener(e -> showDetailDialog());
+        buttonPanel.add(editButton);
+        buttonPanel.add(deleteButton);
+        buttonPanel.add(closeButton);
 
-        RButton editButton = new RButton("✏️ Edit", RButton.ButtonType.SECONDARY);
-        editButton.addActionListener(e -> showEditDialog());
+        mainPanel.add(buttonPanel);
 
-        RButton deleteButton = new RButton("🗑️ Hapus", RButton.ButtonType.DANGER);
-        deleteButton.addActionListener(e -> deletePenyewa());
+        dialog.add(mainPanel);
+        dialog.setVisible(true);
+    }
 
-        actionPanel.add(detailButton);
-        actionPanel.add(editButton);
-        actionPanel.add(deleteButton);
+    private JPanel createInfoRow(String label, String value) {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 3));
+        row.setBackground(Color.WHITE);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
 
-        panel.add(actionPanel, BorderLayout.SOUTH);
+        JLabel labelComp = new JLabel(label);
+        labelComp.setFont(FontManager.FONT_BODY_LARGE);
+        labelComp.setForeground(ColorPalette.GRAY_DARK);
+        labelComp.setPreferredSize(new Dimension(130, 25));
 
-        return panel;
+        JLabel colon = new JLabel(": ");
+        colon.setFont(FontManager.FONT_BODY_LARGE);
+
+        JLabel valueComp = new JLabel(value);
+        valueComp.setFont(FontManager.FONT_BODY_LARGE);
+        valueComp.setForeground(ColorPalette.NAVY_DARK);
+
+        row.add(labelComp);
+        row.add(colon);
+        row.add(valueComp);
+
+        return row;
     }
 
     private void showAddDialog() {
-        // Check apakah ada kamar tersedia
         List<Kamar> availableRooms = kamarDAO.getAvailableRooms();
         if (availableRooms.isEmpty()) {
             JOptionPane.showMessageDialog(this,
@@ -168,7 +350,7 @@ public class PenyewaPanel extends JPanel {
         }
 
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Tambah Penyewa", true);
-        dialog.setSize(500, 550);
+        dialog.setSize(500, 450);
         dialog.setLocationRelativeTo(this);
 
         JPanel panel = new JPanel();
@@ -178,9 +360,7 @@ public class PenyewaPanel extends JPanel {
 
         JTextField namaField = new JTextField();
         JTextField noHpField = new JTextField();
-        JTextField emailField = new JTextField();
 
-        // Combo box kamar tersedia
         JComboBox<String> kamarCombo = new JComboBox<>();
         for (Kamar kamar : availableRooms) {
             kamarCombo.addItem(kamar.getNomorKamar() + " - " + kamar.getTipe());
@@ -190,22 +370,21 @@ public class PenyewaPanel extends JPanel {
 
         panel.add(createFormField("Nama Lengkap:", namaField));
         panel.add(createFormField("No HP:", noHpField));
-        panel.add(createFormField("Email:", emailField));
         panel.add(createFormField("Pilih Kamar:", kamarCombo));
         panel.add(createFormField("Tanggal Masuk (dd/MM/yyyy):", tanggalField));
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setBackground(Color.WHITE);
 
-        RButton saveButton = new RButton("💾 Simpan");
+        RButton saveButton = new RButton("Simpan");
         saveButton.addActionListener(e -> {
-            if (validateAndSavePenyewa(namaField, noHpField, emailField, kamarCombo, tanggalField, null, availableRooms)) {
+            if (validateAndSavePenyewa(namaField, noHpField, kamarCombo, tanggalField, null, availableRooms)) {
                 dialog.dispose();
                 refreshData();
             }
         });
 
-        RButton cancelButton = new RButton("❌ Batal", RButton.ButtonType.SECONDARY);
+        RButton cancelButton = new RButton("Batal", RButton.ButtonType.SECONDARY);
         cancelButton.addActionListener(e -> dialog.dispose());
 
         buttonPanel.add(cancelButton);
@@ -216,20 +395,9 @@ public class PenyewaPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    private void showEditDialog() {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Pilih penyewa yang akan diedit!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String idPenyewa = (String) tableModel.getValueAt(selectedRow, 0);
-        Penyewa penyewa = penyewaDAO.getById(idPenyewa);
-
-        if (penyewa == null) return;
-
+    private void showEditDialog(Penyewa penyewa) {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Edit Penyewa", true);
-        dialog.setSize(500, 550);
+        dialog.setSize(500, 450);
         dialog.setLocationRelativeTo(this);
 
         JPanel panel = new JPanel();
@@ -239,9 +407,7 @@ public class PenyewaPanel extends JPanel {
 
         JTextField namaField = new JTextField(penyewa.getNama());
         JTextField noHpField = new JTextField(penyewa.getNoHp());
-        JTextField emailField = new JTextField(penyewa.getEmail());
 
-        // Kamar combo (current + available)
         JComboBox<String> kamarCombo = new JComboBox<>();
         Kamar currentKamar = kamarDAO.getById(penyewa.getIdKamar());
         kamarCombo.addItem(currentKamar.getNomorKamar() + " - " + currentKamar.getTipe() + " (Current)");
@@ -255,22 +421,21 @@ public class PenyewaPanel extends JPanel {
 
         panel.add(createFormField("Nama Lengkap:", namaField));
         panel.add(createFormField("No HP:", noHpField));
-        panel.add(createFormField("Email:", emailField));
         panel.add(createFormField("Kamar:", kamarCombo));
         panel.add(createFormField("Tanggal Masuk:", tanggalField));
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setBackground(Color.WHITE);
 
-        RButton saveButton = new RButton("💾 Simpan");
+        RButton saveButton = new RButton("Simpan");
         saveButton.addActionListener(e -> {
-            if (validateAndSavePenyewa(namaField, noHpField, emailField, kamarCombo, tanggalField, idPenyewa, availableRooms)) {
+            if (validateAndSavePenyewa(namaField, noHpField, kamarCombo, tanggalField, penyewa.getIdPenyewa(), availableRooms)) {
                 dialog.dispose();
                 refreshData();
             }
         });
 
-        RButton cancelButton = new RButton("❌ Batal", RButton.ButtonType.SECONDARY);
+        RButton cancelButton = new RButton("Batal", RButton.ButtonType.SECONDARY);
         cancelButton.addActionListener(e -> dialog.dispose());
 
         buttonPanel.add(cancelButton);
@@ -281,49 +446,14 @@ public class PenyewaPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    private void showDetailDialog() {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Pilih penyewa untuk melihat detail!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String idPenyewa = (String) tableModel.getValueAt(selectedRow, 0);
-        Penyewa penyewa = penyewaDAO.getById(idPenyewa);
-        Kamar kamar = kamarDAO.getById(penyewa.getIdKamar());
-
-        // ⚠️ NULL CHECK: Jika kamar tidak ada
-        String kamarInfo = (kamar != null) ?
-                kamar.getNomorKamar() + " (" + kamar.getTipe() + ")" :
-                "Kamar tidak ditemukan";
-
-        String detail = String.format(
-                "ID Penyewa: %s\nNama: %s\nNo HP: %s\nEmail: %s\nKamar: %s\nTanggal Masuk: %s\nStatus: %s",
-                penyewa.getIdPenyewa(), penyewa.getNama(), penyewa.getNoHp(), penyewa.getEmail(),
-                kamarInfo,
-                DateUtil.formatDate(penyewa.getTanggalMasuk()), penyewa.getStatus()
-        );
-
-        JOptionPane.showMessageDialog(this, detail, "Detail Penyewa", JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    private void deletePenyewa() {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Pilih penyewa yang akan dihapus!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String idPenyewa = (String) tableModel.getValueAt(selectedRow, 0);
-        String nama = (String) tableModel.getValueAt(selectedRow, 1);
-
+    private void deletePenyewa(Penyewa penyewa) {
         int confirm = JOptionPane.showConfirmDialog(this,
-                "Hapus penyewa " + nama + "?\nStatus kamar akan berubah menjadi Tersedia.",
+                "Hapus penyewa " + penyewa.getNama() + "?\nStatus kamar akan berubah menjadi Tersedia.",
                 "Konfirmasi Hapus",
                 JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            if (penyewaDAO.delete(idPenyewa)) {
+            if (penyewaDAO.delete(penyewa.getIdPenyewa())) {
                 JOptionPane.showMessageDialog(this, "Penyewa berhasil dihapus!");
                 refreshData();
             } else {
@@ -333,26 +463,20 @@ public class PenyewaPanel extends JPanel {
     }
 
     private boolean validateAndSavePenyewa(JTextField namaField, JTextField noHpField,
-                                           JTextField emailField, JComboBox<String> kamarCombo, JTextField tanggalField,
+                                           JComboBox<String> kamarCombo, JTextField tanggalField,
                                            String editId, List<Kamar> availableRooms) {
 
         String nama = namaField.getText().trim();
         String noHp = noHpField.getText().trim();
-        String email = emailField.getText().trim();
         String tanggalStr = tanggalField.getText().trim();
 
-        if (!ValidationUtil.isNotEmpty(nama) || !ValidationUtil.isNotEmpty(noHp) || !ValidationUtil.isNotEmpty(email)) {
-            JOptionPane.showMessageDialog(this, "Semua field harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
+        if (!ValidationUtil.isNotEmpty(nama) || !ValidationUtil.isNotEmpty(noHp)) {
+            JOptionPane.showMessageDialog(this, "Nama dan No HP harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
 
         if (!ValidationUtil.isValidPhone(noHp)) {
             JOptionPane.showMessageDialog(this, "Format nomor HP tidak valid!", "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-
-        if (!ValidationUtil.isValidEmail(email)) {
-            JOptionPane.showMessageDialog(this, "Format email tidak valid!", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
 
@@ -362,25 +486,64 @@ public class PenyewaPanel extends JPanel {
             return false;
         }
 
-        // Get kamar ID
         String selectedKamar = (String) kamarCombo.getSelectedItem();
-        String nomorKamar = selectedKamar.split(" - ")[0];
+        if (selectedKamar == null || selectedKamar.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Pilih kamar terlebih dahulu!", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        // Parse nomor kamar dari combo box
+        // Format: "K01 - Double" atau "K01 - Double (Current)"
+        String nomorKamar = selectedKamar.split(" - ")[0].trim();
 
         Kamar kamar = null;
+
         if (editId != null) {
-            // Edit mode: bisa current atau available
-            kamar = kamarDAO.getAll().stream()
-                    .filter(k -> k.getNomorKamar().equals(nomorKamar))
-                    .findFirst().orElse(null);
+            // Mode EDIT
+            if (selectedKamar.contains("(Current)")) {
+                // Masih pakai kamar yang sama
+                Penyewa oldPenyewa = penyewaDAO.getById(editId);
+                if (oldPenyewa != null) {
+                    kamar = kamarDAO.getById(oldPenyewa.getIdKamar());
+                }
+            } else {
+                // Pindah ke kamar baru
+                for (Kamar k : availableRooms) {
+                    if (k.getNomorKamar().equals(nomorKamar)) {
+                        kamar = k;
+                        break;
+                    }
+                }
+            }
         } else {
-            // Add mode: dari available rooms
-            kamar = availableRooms.stream()
-                    .filter(k -> k.getNomorKamar().equals(nomorKamar))
-                    .findFirst().orElse(null);
+            // Mode TAMBAH BARU
+            // Cari di availableRooms berdasarkan nomor kamar
+            for (Kamar k : availableRooms) {
+                if (k.getNomorKamar().equals(nomorKamar)) {
+                    kamar = k;
+                    break;
+                }
+            }
+
+            // Debug: print info untuk troubleshooting
+            System.out.println("=== DEBUG INFO ===");
+            System.out.println("Selected from combo: " + selectedKamar);
+            System.out.println("Parsed nomor kamar: " + nomorKamar);
+            System.out.println("Available rooms count: " + availableRooms.size());
+            System.out.println("Available rooms:");
+            for (Kamar k : availableRooms) {
+                System.out.println("  - " + k.getNomorKamar() + " (" + k.getTipe() + ")");
+            }
+            System.out.println("Kamar found: " + (kamar != null ? kamar.getNomorKamar() : "NULL"));
+            System.out.println("==================");
         }
 
         if (kamar == null) {
-            JOptionPane.showMessageDialog(this, "Kamar tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "Kamar tidak ditemukan atau tidak tersedia!\n" +
+                            "Nomor kamar yang dicari: " + nomorKamar + "\n" +
+                            "Pilihan di combo: " + selectedKamar,
+                    "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
 
@@ -388,20 +551,16 @@ public class PenyewaPanel extends JPanel {
         penyewa.setIdPenyewa(editId != null ? editId : penyewaDAO.generateNewId());
         penyewa.setNama(nama);
         penyewa.setNoHp(noHp);
-        penyewa.setEmail(email);
+        penyewa.setEmail(""); // Email dihapus sesuai permintaan
         penyewa.setIdKamar(kamar.getIdKamar());
         penyewa.setTanggalMasuk(tanggalMasuk);
         penyewa.setStatus("Aktif");
 
-        boolean success;
-        if (editId != null) {
-            success = penyewaDAO.update(penyewa);
-        } else {
-            success = penyewaDAO.create(penyewa);
-        }
+        boolean success = editId != null ? penyewaDAO.update(penyewa) : penyewaDAO.create(penyewa);
 
         if (success) {
-            JOptionPane.showMessageDialog(this, editId != null ? "Penyewa berhasil diupdate!" : "Penyewa berhasil ditambahkan!");
+            JOptionPane.showMessageDialog(this,
+                    editId != null ? "Penyewa berhasil diupdate!" : "Penyewa berhasil ditambahkan!");
             return true;
         } else {
             JOptionPane.showMessageDialog(this, "Gagal menyimpan penyewa!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -433,60 +592,9 @@ public class PenyewaPanel extends JPanel {
         return panel;
     }
 
-    private void searchPenyewa() {
-        String keyword = searchField.getText().trim().toLowerCase();
-        tableModel.setRowCount(0);
-
-        for (Penyewa penyewa : penyewaDAO.getAll()) {
-            Kamar kamar = kamarDAO.getById(penyewa.getIdKamar());
-
-            // ⚠️ NULL CHECK: Skip jika kamar tidak ditemukan
-            if (kamar == null) {
-                continue;
-            }
-
-            if (keyword.isEmpty() ||
-                    penyewa.getNama().toLowerCase().contains(keyword) ||
-                    penyewa.getNoHp().contains(keyword) ||
-                    kamar.getNomorKamar().toLowerCase().contains(keyword)) {
-
-                Object[] row = {
-                        penyewa.getIdPenyewa(),
-                        penyewa.getNama(),
-                        penyewa.getNoHp(),
-                        penyewa.getEmail(),
-                        kamar.getNomorKamar(),
-                        DateUtil.formatDate(penyewa.getTanggalMasuk()),
-                        penyewa.getStatus()
-                };
-                tableModel.addRow(row);
-            }
-        }
-    }
-
     public void refreshData() {
-        tableModel.setRowCount(0);
-
-        for (Penyewa penyewa : penyewaDAO.getAll()) {
-            Kamar kamar = kamarDAO.getById(penyewa.getIdKamar());
-
-            // ⚠️ NULL CHECK: Skip jika kamar tidak ditemukan
-            if (kamar == null) {
-                System.err.println("⚠️ WARNING: Kamar dengan ID " + penyewa.getIdKamar() +
-                        " tidak ditemukan untuk penyewa " + penyewa.getNama());
-                continue; // Skip data ini
-            }
-
-            Object[] row = {
-                    penyewa.getIdPenyewa(),
-                    penyewa.getNama(),
-                    penyewa.getNoHp(),
-                    penyewa.getEmail(),
-                    kamar.getNomorKamar(),
-                    DateUtil.formatDate(penyewa.getTanggalMasuk()),
-                    penyewa.getStatus()
-            };
-            tableModel.addRow(row);
-        }
+        currentPenyewaList = new ArrayList<>(penyewaDAO.getActivePenyewa());
+        currentPenyewaList.sort(Comparator.comparing(Penyewa::getIdPenyewa));
+        filterAndRefresh();
     }
 }
