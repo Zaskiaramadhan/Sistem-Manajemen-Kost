@@ -58,7 +58,7 @@ public class PenyewaPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(ColorPalette.BG_OFF_WHITE);
 
-        JLabel titleLabel = new JLabel("KELOLA PENYEWA");
+        JLabel titleLabel = new JLabel("Kelola Penyewa");
         titleLabel.setFont(FontManager.FONT_H1);
         titleLabel.setForeground(ColorPalette.NAVY_DARK);
 
@@ -258,7 +258,7 @@ public class PenyewaPanel extends JPanel {
         if (kamar == null) return;
 
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Detail Penyewa", true);
-        dialog.setSize(500, 450);
+        dialog.setSize(500, 500);
         dialog.setLocationRelativeTo(this);
 
         JPanel mainPanel = new JPanel();
@@ -350,13 +350,19 @@ public class PenyewaPanel extends JPanel {
         }
 
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Tambah Penyewa", true);
-        dialog.setSize(500, 450);
+        dialog.setSize(500, 520);
         dialog.setLocationRelativeTo(this);
 
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         panel.setBackground(Color.WHITE);
+
+        // ID Penyewa (auto-generated, readonly)
+        String newId = penyewaDAO.generateNewId();
+        JTextField idField = new JTextField(newId);
+        idField.setEditable(false);
+        idField.setBackground(ColorPalette.BG_OFF_WHITE);
 
         JTextField namaField = new JTextField();
         JTextField noHpField = new JTextField();
@@ -368,6 +374,7 @@ public class PenyewaPanel extends JPanel {
 
         JTextField tanggalField = new JTextField(DateUtil.formatDate(LocalDate.now()));
 
+        panel.add(createFormField("ID Penyewa:", idField));
         panel.add(createFormField("Nama Lengkap:", namaField));
         panel.add(createFormField("No HP:", noHpField));
         panel.add(createFormField("Pilih Kamar:", kamarCombo));
@@ -397,13 +404,18 @@ public class PenyewaPanel extends JPanel {
 
     private void showEditDialog(Penyewa penyewa) {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Edit Penyewa", true);
-        dialog.setSize(500, 450);
+        dialog.setSize(500, 520);
         dialog.setLocationRelativeTo(this);
 
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         panel.setBackground(Color.WHITE);
+
+        // ID Penyewa (readonly)
+        JTextField idField = new JTextField(penyewa.getIdPenyewa());
+        idField.setEditable(false);
+        idField.setBackground(ColorPalette.BG_OFF_WHITE);
 
         JTextField namaField = new JTextField(penyewa.getNama());
         JTextField noHpField = new JTextField(penyewa.getNoHp());
@@ -419,6 +431,7 @@ public class PenyewaPanel extends JPanel {
 
         JTextField tanggalField = new JTextField(DateUtil.formatDate(penyewa.getTanggalMasuk()));
 
+        panel.add(createFormField("ID Penyewa:", idField));
         panel.add(createFormField("Nama Lengkap:", namaField));
         panel.add(createFormField("No HP:", noHpField));
         panel.add(createFormField("Kamar:", kamarCombo));

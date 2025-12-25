@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 /**
  * Data Access Object untuk Kamar
- * Menangani CRUD operations
+ * Menangani CRUD operations dengan sinkronisasi otomatis ke file
  */
 public class KamarDAO {
 
@@ -30,14 +30,25 @@ public class KamarDAO {
 
     /**
      * CREATE - Tambah kamar baru
+     * Otomatis menyimpan ke file
      */
     public boolean create(Kamar kamar) {
         try {
             kamarList.add(kamar);
             boolean saved = saveToFile();
-            System.out.println("✅ Kamar created: " + kamar.getNomorKamar() + " | Status: " + kamar.getStatus());
+
+            if (saved) {
+                System.out.println("✅ Kamar created: " + kamar.getNomorKamar() +
+                        " | Status: " + kamar.getStatus() +
+                        " | Image: " + kamar.getImagePath());
+            } else {
+                System.err.println("❌ Failed to save kamar to file");
+                kamarList.remove(kamar); // Rollback jika gagal save
+            }
+
             return saved;
         } catch (Exception e) {
+            System.err.println("❌ Error creating kamar: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -71,19 +82,41 @@ public class KamarDAO {
 
     /**
      * UPDATE - Update kamar
+     * Otomatis menyimpan ke file
      */
     public boolean update(Kamar updatedKamar) {
         try {
+            Kamar oldKamar = null;
+            int index = -1;
+
             for (int i = 0; i < kamarList.size(); i++) {
                 if (kamarList.get(i).getIdKamar().equals(updatedKamar.getIdKamar())) {
-                    kamarList.set(i, updatedKamar);
-                    boolean saved = saveToFile();
-                    System.out.println("✅ Kamar updated: " + updatedKamar.getNomorKamar() + " | Status: " + updatedKamar.getStatus());
-                    return saved;
+                    oldKamar = kamarList.get(i);
+                    index = i;
+                    break;
                 }
             }
-            return false;
+
+            if (index == -1) {
+                System.err.println("❌ Kamar not found: " + updatedKamar.getIdKamar());
+                return false;
+            }
+
+            kamarList.set(index, updatedKamar);
+            boolean saved = saveToFile();
+
+            if (saved) {
+                System.out.println("✅ Kamar updated: " + updatedKamar.getNomorKamar() +
+                        " | Status: " + updatedKamar.getStatus() +
+                        " | Image: " + updatedKamar.getImagePath());
+            } else {
+                System.err.println("❌ Failed to save updated kamar");
+                kamarList.set(index, oldKamar); // Rollback
+            }
+
+            return saved;
         } catch (Exception e) {
+            System.err.println("❌ Error updating kamar: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -91,15 +124,33 @@ public class KamarDAO {
 
     /**
      * DELETE - Hapus kamar
+     * Otomatis menyimpan ke file
      */
     public boolean delete(String idKamar) {
         try {
-            boolean removed = kamarList.removeIf(k -> k.getIdKamar().equals(idKamar));
-            if (removed) {
-                return saveToFile();
+            Kamar kamarToDelete = getById(idKamar);
+            if (kamarToDelete == null) {
+                System.err.println("❌ Kamar not found for deletion: " + idKamar);
+                return false;
             }
-            return false;
+
+            boolean removed = kamarList.removeIf(k -> k.getIdKamar().equals(idKamar));
+
+            if (removed) {
+                boolean saved = saveToFile();
+
+                if (saved) {
+                    System.out.println("✅ Kamar deleted: " + kamarToDelete.getNomorKamar());
+                } else {
+                    System.err.println("❌ Failed to save after deletion");
+                    kamarList.add(kamarToDelete); // Rollback
+                    return false;
+                }
+            }
+
+            return removed;
         } catch (Exception e) {
+            System.err.println("❌ Error deleting kamar: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -149,10 +200,13 @@ public class KamarDAO {
 
     /**
      * Load data dari file
+     * Dipanggil saat aplikasi start
      */
     private void loadFromFile() {
         kamarList.clear();
         List<String> lines = FileHandler.readAllLines(FileHandler.KAMAR_FILE);
+
+        System.out.println("📂 Loading kamar from file...");
 
         for (String line : lines) {
             Kamar kamar = Kamar.fromFileString(line);
@@ -162,14 +216,22 @@ public class KamarDAO {
         }
 
         System.out.println("✅ Loaded " + kamarList.size() + " kamar from file");
-        // Debug: print semua status
-        for (Kamar k : kamarList) {
-            System.out.println("   - " + k.getNomorKamar() + " | Status: " + k.getStatus());
+
+        // Debug: print semua kamar dengan detail
+        if (!kamarList.isEmpty()) {
+            System.out.println("\n📋 Kamar List:");
+            for (Kamar k : kamarList) {
+                System.out.println("   - " + k.getNomorKamar() +
+                        " | Status: " + k.getStatus() +
+                        " | Image: " + (k.getImagePath() != null && !k.getImagePath().isEmpty() ? k.getImagePath() : "None"));
+            }
+            System.out.println();
         }
     }
 
     /**
      * Save data ke file
+     * Dipanggil setiap kali ada perubahan data (Create, Update, Delete)
      */
     private boolean saveToFile() {
         List<String> lines = kamarList.stream()
@@ -177,16 +239,51 @@ public class KamarDAO {
                 .collect(Collectors.toList());
 
         boolean result = FileHandler.writeAllLines(FileHandler.KAMAR_FILE, lines);
+
         if (result) {
-            System.out.println("💾 Saved " + lines.size() + " kamar to file");
+            System.out.println("💾 Successfully saved " + lines.size() + " kamar to file: " + FileHandler.KAMAR_FILE);
+        } else {
+            System.err.println("❌ Failed to save kamar to file: " + FileHandler.KAMAR_FILE);
         }
+
         return result;
     }
 
     /**
      * Refresh data dari file
+     * Berguna jika file diubah secara eksternal
      */
     public void refresh() {
+        System.out.println("🔄 Refreshing kamar data from file...");
         loadFromFile();
+    }
+
+    /**
+     * Update status kamar (Tersedia/Terisi)
+     */
+    public boolean updateStatus(String idKamar, String newStatus) {
+        try {
+            Kamar kamar = getById(idKamar);
+            if (kamar == null) {
+                System.err.println("❌ Kamar not found: " + idKamar);
+                return false;
+            }
+
+            String oldStatus = kamar.getStatus();
+            kamar.setStatus(newStatus);
+
+            boolean result = update(kamar);
+
+            if (result) {
+                System.out.println("✅ Status updated: " + kamar.getNomorKamar() +
+                        " | " + oldStatus + " → " + newStatus);
+            }
+
+            return result;
+        } catch (Exception e) {
+            System.err.println("❌ Error updating status: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 }

@@ -9,9 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Data Access Object untuk Penyewa
- */
 public class PenyewaDAO {
 
     private static PenyewaDAO instance;
@@ -35,9 +32,16 @@ public class PenyewaDAO {
      */
     public boolean create(Penyewa penyewa) {
         try {
+            // Validasi: Cek apakah kamar sudah ada penyewa aktif
+            Penyewa existingPenyewa = getByKamar(penyewa.getIdKamar());
+            if (existingPenyewa != null) {
+                System.err.println("❌ ERROR: Kamar " + penyewa.getIdKamar() + " sudah ditempati oleh " + existingPenyewa.getNama());
+                return false;
+            }
+
             penyewaList.add(penyewa);
 
-            // ✅ PERBAIKAN: Update status kamar jadi "Terisi"
+            // Update status kamar jadi "Terisi"
             Kamar kamar = KamarDAO.getInstance().getById(penyewa.getIdKamar());
             if (kamar != null) {
                 kamar.setStatus("Terisi");
@@ -50,6 +54,100 @@ public class PenyewaDAO {
             e.printStackTrace();
             return false;
         }
+    }
+
+    /**
+     * UPDATE - Update penyewa (termasuk pindah kamar)
+     */
+    public boolean update(Penyewa updatedPenyewa) {
+        try {
+            Penyewa oldPenyewa = getById(updatedPenyewa.getIdPenyewa());
+            if (oldPenyewa == null) {
+                return false;
+            }
+
+            String oldKamarId = oldPenyewa.getIdKamar();
+            String newKamarId = updatedPenyewa.getIdKamar();
+
+            // Jika pindah kamar
+            if (!oldKamarId.equals(newKamarId)) {
+                // Validasi: Cek apakah kamar baru sudah ada penyewa aktif
+                Penyewa existingPenyewa = getByKamar(newKamarId);
+                if (existingPenyewa != null && !existingPenyewa.getIdPenyewa().equals(updatedPenyewa.getIdPenyewa())) {
+                    System.err.println("❌ ERROR: Kamar baru sudah ditempati oleh " + existingPenyewa.getNama());
+                    return false;
+                }
+
+                // Update kamar lama jadi "Tersedia"
+                Kamar oldKamar = KamarDAO.getInstance().getById(oldKamarId);
+                if (oldKamar != null) {
+                    oldKamar.setStatus("Tersedia");
+                    KamarDAO.getInstance().update(oldKamar);
+                    System.out.println("✅ Kamar lama " + oldKamar.getNomorKamar() + " status: Tersedia");
+                }
+
+                // Update kamar baru jadi "Terisi"
+                Kamar newKamar = KamarDAO.getInstance().getById(newKamarId);
+                if (newKamar != null) {
+                    newKamar.setStatus("Terisi");
+                    KamarDAO.getInstance().update(newKamar);
+                    System.out.println("✅ Kamar baru " + newKamar.getNomorKamar() + " status: Terisi");
+                }
+            }
+
+            // Update data penyewa
+            for (int i = 0; i < penyewaList.size(); i++) {
+                if (penyewaList.get(i).getIdPenyewa().equals(updatedPenyewa.getIdPenyewa())) {
+                    penyewaList.set(i, updatedPenyewa);
+                    return saveToFile();
+                }
+            }
+
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * DELETE - Hapus penyewa (set Non-Aktif)
+     */
+    public boolean delete(String idPenyewa) {
+        try {
+            Penyewa penyewa = getById(idPenyewa);
+            if (penyewa != null) {
+                penyewa.setStatus("Non-Aktif");
+
+                // Update status kamar jadi "Tersedia"
+                Kamar kamar = KamarDAO.getInstance().getById(penyewa.getIdKamar());
+                if (kamar != null) {
+                    kamar.setStatus("Tersedia");
+                    KamarDAO.getInstance().update(kamar);
+                    System.out.println("✅ Kamar " + kamar.getNomorKamar() + " status updated to: Tersedia");
+                }
+
+                return update(penyewa);
+            }
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Validasi apakah kamar sudah ditempati
+     */
+    public boolean isKamarOccupied(String idKamar, String excludePenyewaId) {
+        return penyewaList.stream()
+                .anyMatch(p -> "Aktif".equals(p.getStatus())
+                        && p.getIdKamar().equals(idKamar)
+                        && !p.getIdPenyewa().equals(excludePenyewaId));
+    }
+
+    public boolean isKamarOccupied(String idKamar) {
+        return isKamarOccupied(idKamar, "");
     }
 
     /**
@@ -86,50 +184,6 @@ public class PenyewaDAO {
                 .filter(p -> p.getIdKamar().equals(idKamar) && "Aktif".equals(p.getStatus()))
                 .findFirst()
                 .orElse(null);
-    }
-
-    /**
-     * UPDATE - Update penyewa
-     */
-    public boolean update(Penyewa updatedPenyewa) {
-        try {
-            for (int i = 0; i < penyewaList.size(); i++) {
-                if (penyewaList.get(i).getIdPenyewa().equals(updatedPenyewa.getIdPenyewa())) {
-                    penyewaList.set(i, updatedPenyewa);
-                    return saveToFile();
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * DELETE - Hapus penyewa (set Non-Aktif)
-     */
-    public boolean delete(String idPenyewa) {
-        try {
-            Penyewa penyewa = getById(idPenyewa);
-            if (penyewa != null) {
-                penyewa.setStatus("Non-Aktif");
-
-                // ✅ PERBAIKAN: Update status kamar jadi "Tersedia"
-                Kamar kamar = KamarDAO.getInstance().getById(penyewa.getIdKamar());
-                if (kamar != null) {
-                    kamar.setStatus("Tersedia");
-                    KamarDAO.getInstance().update(kamar);
-                    System.out.println("✅ Kamar " + kamar.getNomorKamar() + " status updated to: Tersedia");
-                }
-
-                return update(penyewa);
-            }
-            return false;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
     }
 
     /**

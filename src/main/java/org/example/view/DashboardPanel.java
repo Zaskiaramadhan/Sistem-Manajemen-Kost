@@ -188,7 +188,7 @@ public class DashboardPanel extends JPanel {
         valueLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Save reference
-        switch(id) {
+        switch (id) {
             case "total":
                 totalKamarValueLabel = valueLabel;
                 break;
@@ -361,25 +361,32 @@ public class DashboardPanel extends JPanel {
     }
 
     public void refreshData() {
-        // ✅ PERBAIKAN: Force refresh dari file
+        System.out.println("\n📊 === DASHBOARD REFRESH START ===");
+
+        // ✅ PENTING: Force reload dari file
         KamarDAO kamarDAO = KamarDAO.getInstance();
         PenyewaDAO penyewaDAO = PenyewaDAO.getInstance();
         PembayaranDAO pembayaranDAO = PembayaranDAO.getInstance();
 
-        // Reload data dari file
+        // Reload semua data dari file
         kamarDAO.refresh();
         penyewaDAO.refresh();
+        pembayaranDAO.refresh();
 
         // Update statistik kamar
         int totalKamar = kamarDAO.getTotalRooms();
         int terisi = kamarDAO.getOccupiedRooms();
         int kosong = kamarDAO.getAvailableRoomsCount();
 
-        System.out.println("📊 Dashboard Stats: Total=" + totalKamar + ", Terisi=" + terisi + ", Kosong=" + kosong);
+        System.out.println("📈 Stats Kamar:");
+        System.out.println("   Total    : " + totalKamar);
+        System.out.println("   Terisi   : " + terisi);
+        System.out.println("   Tersedia : " + kosong);
 
-        totalKamarValueLabel.setText(String.valueOf(totalKamar));
-        terisiValueLabel.setText(String.valueOf(terisi));
-        kosongValueLabel.setText(String.valueOf(kosong));
+        // Update UI
+        if (totalKamarValueLabel != null) totalKamarValueLabel.setText(String.valueOf(totalKamar));
+        if (terisiValueLabel != null) terisiValueLabel.setText(String.valueOf(terisi));
+        if (kosongValueLabel != null) kosongValueLabel.setText(String.valueOf(kosong));
 
         // Update statistik pembayaran
         String bulanIni = DateUtil.getCurrentMonthYear();
@@ -391,10 +398,19 @@ public class DashboardPanel extends JPanel {
 
         double persenSudahBayar = totalPenyewa > 0 ? (sudahBayar * 100.0 / totalPenyewa) : 0;
 
-        sudahBayarLabel.setText(String.format("%d orang (%.0f%%)", sudahBayar, persenSudahBayar));
-        belumBayarLabel.setText(belumBayar + " orang");
-        totalPemasukanLabel.setText(String.format("Rp %,.0f", totalPemasukan));
+        System.out.println("💰 Stats Pembayaran:");
+        System.out.println("   Sudah Bayar : " + sudahBayar + "/" + totalPenyewa);
+        System.out.println("   Belum Bayar : " + belumBayar);
+        System.out.println("   Pemasukan   : Rp " + String.format("%,.0f", totalPemasukan));
 
+        if (sudahBayarLabel != null)
+            sudahBayarLabel.setText(String.format("%d orang (%.0f%%)", sudahBayar, persenSudahBayar));
+        if (belumBayarLabel != null) belumBayarLabel.setText(belumBayar + " orang");
+        if (totalPemasukanLabel != null) totalPemasukanLabel.setText(String.format("Rp %,.0f", totalPemasukan));
+
+        // Update notifikasi
         updateNotifications();
+
+        System.out.println("✅ === DASHBOARD REFRESH COMPLETE ===\n");
     }
 }

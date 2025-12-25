@@ -10,11 +10,14 @@ import org.example.dao.PenyewaDAO;
 import org.example.util.ValidationUtil;
 
 import javax.swing.*;
-import javax.swing.filechooser.FileFilter;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -122,17 +125,7 @@ public class KamarPanel extends JPanel {
             private BufferedImage image;
 
             {
-                try {
-                    String imagePath = kamar.getImagePath();
-                    if (imagePath != null && !imagePath.isEmpty()) {
-                        File imgFile = new File(imagePath);
-                        if (imgFile.exists()) {
-                            image = ImageIO.read(imgFile);
-                        }
-                    }
-                } catch (Exception e) {
-                    System.out.println("Error loading image for " + kamar.getNomorKamar());
-                }
+                image = loadImage(kamar.getImagePath());
             }
 
             @Override
@@ -209,6 +202,35 @@ public class KamarPanel extends JPanel {
         return card;
     }
 
+    private BufferedImage loadImage(String imagePath) {
+        if (imagePath == null || imagePath.isEmpty()) {
+            return null;
+        }
+
+        try {
+            // Coba load dari file system dulu
+            File imgFile = new File(imagePath);
+            if (imgFile.exists()) {
+                BufferedImage img = ImageIO.read(imgFile);
+                if (img != null) {
+                    return img;
+                }
+            }
+
+            // Coba load dari resources
+            InputStream is = getClass().getClassLoader().getResourceAsStream(imagePath);
+            if (is != null) {
+                return ImageIO.read(is);
+            }
+
+            System.out.println("⚠️ Image not found: " + imagePath);
+        } catch (Exception e) {
+            System.err.println("❌ Error loading image: " + e.getMessage());
+        }
+
+        return null;
+    }
+
     private void searchKamar() {
         String keyword = searchField.getText().trim().toLowerCase();
         currentKamarList.clear();
@@ -282,17 +304,7 @@ public class KamarPanel extends JPanel {
             private BufferedImage image;
 
             {
-                try {
-                    String imagePath = kamar.getImagePath();
-                    if (imagePath != null && !imagePath.isEmpty()) {
-                        File imgFile = new File(imagePath);
-                        if (imgFile.exists()) {
-                            image = ImageIO.read(imgFile);
-                        }
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                image = loadImage(kamar.getImagePath());
             }
 
             @Override
@@ -566,11 +578,13 @@ public class KamarPanel extends JPanel {
         showFormDialog(kamar);
     }
 
+    // ============================================
+    // PERUBAHAN UTAMA: showFormDialog()
+    // ============================================
     private void showFormDialog(Kamar kamar) {
         boolean isEdit = (kamar != null);
         String title = isEdit ? "Edit Kamar" : "Tambah Kamar Baru";
 
-        // Reset selected image path
         if (isEdit && kamar.getImagePath() != null && !kamar.getImagePath().isEmpty()) {
             selectedImagePath = kamar.getImagePath();
         } else {
@@ -590,12 +604,11 @@ public class KamarPanel extends JPanel {
         scrollPane.setBorder(null);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        // ===== IMAGE UPLOAD SECTION =====
-        JPanel imageUploadPanel = createImageUploadPanel(kamar);
+        // PERUBAHAN: Panel upload gambar sekarang dari resources
+        JPanel imageUploadPanel = createImageUploadPanelFromResources(kamar);
         mainPanel.add(imageUploadPanel);
         mainPanel.add(Box.createVerticalStrut(20));
 
-        // ===== ROOM INFO SECTION =====
         JLabel infoLabel = new JLabel("INFORMASI KAMAR");
         infoLabel.setFont(FontManager.FONT_BODY.deriveFont(Font.BOLD));
         infoLabel.setForeground(ColorPalette.NAVY_DARK);
@@ -608,7 +621,6 @@ public class KamarPanel extends JPanel {
         mainPanel.add(infoLabelWrapper);
         mainPanel.add(Box.createVerticalStrut(10));
 
-        // Nomor Kamar
         JTextField nomorField = new JTextField();
         nomorField.setFont(FontManager.FONT_BODY);
         nomorField.setBorder(AppConfig.createInputBorder());
@@ -630,7 +642,6 @@ public class KamarPanel extends JPanel {
         mainPanel.add(nomorField);
         mainPanel.add(Box.createVerticalStrut(10));
 
-        // Tipe Kamar
         String[] tipeOptions = {"Single", "Double"};
         JComboBox<String> tipeCombo = new JComboBox<>(tipeOptions);
         if (isEdit) tipeCombo.setSelectedItem(kamar.getTipe());
@@ -641,7 +652,6 @@ public class KamarPanel extends JPanel {
         mainPanel.add(tipeCombo);
         mainPanel.add(Box.createVerticalStrut(10));
 
-        // Harga
         JPanel hargaPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         hargaPanel.setBackground(Color.WHITE);
         hargaPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
@@ -671,7 +681,6 @@ public class KamarPanel extends JPanel {
         mainPanel.add(hargaPanel);
         mainPanel.add(Box.createVerticalStrut(10));
 
-        // Ukuran
         JPanel ukuranPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         ukuranPanel.setBackground(Color.WHITE);
         ukuranPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
@@ -708,7 +717,6 @@ public class KamarPanel extends JPanel {
         mainPanel.add(ukuranPanel);
         mainPanel.add(Box.createVerticalStrut(10));
 
-        // Lantai
         String[] lantaiOptions = {"Lantai 1", "Lantai 2", "Lantai 3"};
         JComboBox<String> lantaiCombo = new JComboBox<>(lantaiOptions);
         lantaiCombo.setFont(FontManager.FONT_BODY);
@@ -725,7 +733,6 @@ public class KamarPanel extends JPanel {
         mainPanel.add(lantaiCombo);
         mainPanel.add(Box.createVerticalStrut(20));
 
-        // ===== FASILITAS SECTION =====
         JLabel fasilitasHeaderLabel = new JLabel("FASILITAS (centang jika tersedia):");
         fasilitasHeaderLabel.setFont(FontManager.FONT_BODY.deriveFont(Font.BOLD));
         fasilitasHeaderLabel.setForeground(ColorPalette.NAVY_DARK);
@@ -775,7 +782,6 @@ public class KamarPanel extends JPanel {
         mainPanel.add(fasilitasPanel);
         mainPanel.add(Box.createVerticalStrut(20));
 
-        // ===== BUTTON PANEL =====
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setBackground(Color.WHITE);
         buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
@@ -804,20 +810,12 @@ public class KamarPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    // Inner class untuk preview panel
     private class ImagePreviewPanel extends JPanel {
         private BufferedImage previewImage;
 
         public ImagePreviewPanel(Kamar kamar) {
             if (kamar != null && kamar.getImagePath() != null && !kamar.getImagePath().isEmpty()) {
-                try {
-                    File imgFile = new File(kamar.getImagePath());
-                    if (imgFile.exists()) {
-                        previewImage = ImageIO.read(imgFile);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                previewImage = loadImage(kamar.getImagePath());
             }
         }
 
@@ -847,13 +845,16 @@ public class KamarPanel extends JPanel {
         }
     }
 
-    private JPanel createImageUploadPanel(Kamar kamar) {
+    // ============================================
+    // PERUBAHAN BESAR: Ambil gambar dari resources IntelliJ
+    // ============================================
+    private JPanel createImageUploadPanelFromResources(Kamar kamar) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(Color.WHITE);
-        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
 
-        JLabel uploadLabel = new JLabel("UPLOAD FOTO KAMAR");
+        JLabel uploadLabel = new JLabel("PILIH FOTO KAMAR DARI PROJECT");
         uploadLabel.setFont(FontManager.FONT_BODY.deriveFont(Font.BOLD));
         uploadLabel.setForeground(ColorPalette.NAVY_DARK);
         uploadLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -865,86 +866,150 @@ public class KamarPanel extends JPanel {
         panel.add(uploadLabelWrapper);
         panel.add(Box.createVerticalStrut(10));
 
-        // Panel untuk preview dan tombol
         JPanel uploadControlPanel = new JPanel(new BorderLayout(10, 10));
         uploadControlPanel.setBackground(Color.WHITE);
-        uploadControlPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+        uploadControlPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
 
-        // Preview panel menggunakan inner class
+        // Preview Panel
         ImagePreviewPanel previewPanel = new ImagePreviewPanel(kamar);
-        previewPanel.setPreferredSize(new Dimension(120, 80));
-        previewPanel.setBorder(BorderFactory.createLineBorder(ColorPalette.GRAY_LIGHT, 1));
+        previewPanel.setPreferredSize(new Dimension(150, 100));
+        previewPanel.setBorder(BorderFactory.createLineBorder(ColorPalette.GRAY_MEDIUM, 2));
 
-        // Button panel
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
-        buttonPanel.setBackground(Color.WHITE);
+        // Right Panel - ComboBox untuk pilih gambar
+        JPanel rightPanel = new JPanel();
+        rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
+        rightPanel.setBackground(Color.WHITE);
 
-        JLabel fileLabel = new JLabel("Belum ada file dipilih");
-        fileLabel.setFont(FontManager.FONT_BODY);
-        fileLabel.setForeground(ColorPalette.GRAY_DARK);
-        fileLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel instructionLabel = new JLabel("Pilih gambar dari dropdown:");
+        instructionLabel.setFont(FontManager.FONT_BODY_SMALL);
+        instructionLabel.setForeground(ColorPalette.GRAY_DARK);
+        instructionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        if (kamar != null && kamar.getImagePath() != null && !kamar.getImagePath().isEmpty()) {
-            fileLabel.setText("Foto kamar telah diupload");
+        // ComboBox dengan list gambar dari resources
+        JComboBox<String> imageComboBox = new JComboBox<>();
+        imageComboBox.setFont(FontManager.FONT_BODY);
+        imageComboBox.setMaximumSize(new Dimension(400, 35));
+        imageComboBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Populate dengan gambar dari resources
+        List<String> availableImages = getAvailableImagesFromResources();
+        imageComboBox.addItem("-- Pilih Gambar --");
+
+        for (String imgPath : availableImages) {
+            // Extract nama file saja untuk ditampilkan
+            String displayName = imgPath.substring(imgPath.lastIndexOf("/") + 1);
+            imageComboBox.addItem(displayName);
         }
 
-        RButton chooseButton = new RButton("Pilih Gambar", RButton.ButtonType.SECONDARY);
-        chooseButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-        chooseButton.addActionListener(e -> {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setFileFilter(new FileFilter() {
-                @Override
-                public boolean accept(File f) {
-                    if (f.isDirectory()) return true;
-                    String name = f.getName().toLowerCase();
-                    return name.endsWith(".jpg") || name.endsWith(".jpeg") ||
-                            name.endsWith(".png") || name.endsWith(".gif");
+        JLabel selectedLabel = new JLabel("Belum ada gambar dipilih");
+        selectedLabel.setFont(FontManager.FONT_BODY);
+        selectedLabel.setForeground(ColorPalette.SUCCESS_GREEN);
+        selectedLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Set selected item jika edit mode
+        if (kamar != null && kamar.getImagePath() != null && !kamar.getImagePath().isEmpty()) {
+            String currentImage = kamar.getImagePath();
+            String displayName = currentImage.substring(currentImage.lastIndexOf("/") + 1);
+
+            for (int i = 0; i < imageComboBox.getItemCount(); i++) {
+                if (imageComboBox.getItemAt(i).equals(displayName)) {
+                    imageComboBox.setSelectedIndex(i);
+                    selectedLabel.setText("✓ Terpilih: " + displayName);
+                    selectedImagePath = currentImage; // Set global variable
+                    break;
                 }
+            }
+        }
 
-                @Override
-                public String getDescription() {
-                    return "Image Files (*.jpg, *.jpeg, *.png, *.gif)";
+        // Action listener untuk update preview dan selectedImagePath
+        imageComboBox.addActionListener(e -> {
+            String selected = (String) imageComboBox.getSelectedItem();
+
+            if (selected != null && !selected.equals("-- Pilih Gambar --")) {
+                // Reconstruct full path
+                String fullPath = "images/rooms/" + selected;
+                selectedImagePath = fullPath;
+
+                selectedLabel.setText("✓ Terpilih: " + selected);
+                selectedLabel.setForeground(ColorPalette.SUCCESS_GREEN);
+
+                // Update preview
+                BufferedImage img = loadImage(fullPath);
+                if (img != null) {
+                    previewPanel.setPreviewImage(img);
+                    System.out.println("✅ Preview updated: " + fullPath);
+                } else {
+                    System.out.println("⚠️ Failed to load preview for: " + fullPath);
                 }
-            });
-
-            int result = fileChooser.showOpenDialog(KamarPanel.this);
-            if (result == JFileChooser.APPROVE_OPTION) {
-                File selectedFile = fileChooser.getSelectedFile();
-                selectedImagePath = selectedFile.getAbsolutePath();
-                fileLabel.setText(selectedFile.getName());
-
-                System.out.println("Image selected: " + selectedImagePath);
-
-                // Load preview
-                try {
-                    BufferedImage img = ImageIO.read(selectedFile);
-                    if (img != null) { // ← TAMBAHKAN IF INI
-                        previewPanel.setPreviewImage(img);
-                        System.out.println("Preview loaded successfully");
-                    } else {
-                        System.out.println("Failed to load image as BufferedImage");
-                    }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    JOptionPane.showMessageDialog(KamarPanel.this,
-                            "Gagal memuat preview gambar!",
-                            "Error", JOptionPane.ERROR_MESSAGE);
-                }
+            } else {
+                selectedImagePath = "";
+                selectedLabel.setText("Belum ada gambar dipilih");
+                selectedLabel.setForeground(ColorPalette.WARNING_ORANGE);
+                previewPanel.setPreviewImage(null);
             }
         });
 
-        buttonPanel.add(fileLabel);
-        buttonPanel.add(Box.createVerticalStrut(5));
-        buttonPanel.add(chooseButton);
+        rightPanel.add(instructionLabel);
+        rightPanel.add(Box.createVerticalStrut(8));
+        rightPanel.add(imageComboBox);
+        rightPanel.add(Box.createVerticalStrut(10));
+        rightPanel.add(selectedLabel);
 
         uploadControlPanel.add(previewPanel, BorderLayout.WEST);
-        uploadControlPanel.add(buttonPanel, BorderLayout.CENTER);
+        uploadControlPanel.add(rightPanel, BorderLayout.CENTER);
 
         panel.add(uploadControlPanel);
 
         return panel;
     }
+
+    private List<String> getAvailableImagesFromResources() {
+        List<String> images = new ArrayList<>();
+
+        // List semua gambar yang ada di folder images/rooms/
+        String[] imageFiles = {
+                "Single (1).jpg",
+                "Single (2).jpg",
+                "Single (3).jpg",
+                "Single (4).jpg",
+                "Single (5).jpg",
+                "Single (6).jpg",
+                "Single (7).jpg",
+                "Single (8).jpg",
+                "Single (9).jpg",
+                "Single (10).jpg",
+                "Double (1).jpg",
+                "Double (2).jpg",
+                "Double (3).jpg",
+                "Double (4).jpg",
+                "Double (5).jpg",
+                "Double (6).jpg",
+                "Double (7).jpg",
+                "Double (8).jpg",
+                "Double (9).jpg",
+                "Double (10).jpg"
+        };
+
+        for (String fileName : imageFiles) {
+            String resourcePath = "images/rooms/Double (1).jpg";
+
+            // Cek apakah resource ada
+            try {
+                InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath);
+                if (is != null) {
+                    is.close();
+                    images.add(resourcePath);
+                    System.out.println("✓ Found: " + resourcePath);
+                }
+            } catch (Exception e) {
+                System.out.println("✗ Not found: " + resourcePath);
+            }
+        }
+
+        System.out.println("📁 Total images available: " + images.size());
+        return images;
+    }
+
 
     private JPanel createSimpleLabel(String text) {
         JLabel label = new JLabel(text);
@@ -960,58 +1025,21 @@ public class KamarPanel extends JPanel {
         return wrapper;
     }
 
-    private String saveImageToProject(String sourceImagePath, String nomorKamar) {
-        // 1. Validasi input
-        if (sourceImagePath == null || sourceImagePath.isEmpty()) {
+    // ============================================
+    // PERUBAHAN: Simpan ke project resources (bukan copy lagi)
+    // ============================================
+    private String saveImageToProjectResources(String resourcePath, String nomorKamar) {
+        if (resourcePath == null || resourcePath.isEmpty()) {
             return "";
         }
 
-        // 2. Cek jika sudah di folder project
-        if (sourceImagePath.startsWith("images/rooms/")) {
-            File checkFile = new File(sourceImagePath);
-            if (checkFile.exists()) {
-                return sourceImagePath; // Sudah ada, tidak perlu copy
-            }
+        // Jika sudah dalam format resources, return langsung
+        if (resourcePath.startsWith("images/rooms/")) {
+            System.out.println("✅ Image already in resources format: " + resourcePath);
+            return resourcePath;
         }
 
-        try {
-            // 3. Validasi file sumber
-            File sourceFile = new File(sourceImagePath);
-            if (!sourceFile.exists()) {
-                return "";
-            }
-
-            // 4. Buat folder jika belum ada
-            File roomsDir = new File("images/rooms");
-            if (!roomsDir.exists()) {
-                roomsDir.mkdirs();
-            }
-
-            // 5. Generate nama file baru
-            String extension = sourceImagePath.substring(sourceImagePath.lastIndexOf("."));
-            String cleanNomor = nomorKamar.replace(" - ", "_").replace(" ", "_");
-            String fileName = cleanNomor + "_" + System.currentTimeMillis() + extension;
-            File destFile = new File(roomsDir, fileName);
-
-            // 6. Copy file
-            BufferedImage image = ImageIO.read(sourceFile);
-            if (image == null) return "";
-
-            String formatName = extension.substring(1).toLowerCase();
-            if (formatName.equals("jpg")) formatName = "jpeg";
-
-            boolean saved = ImageIO.write(image, formatName, destFile);
-
-            // 7. Return path relatif
-            if (saved && destFile.exists()) {
-                return "images/rooms/" + fileName;
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return "";
+        return resourcePath;
     }
 
     private boolean validateAndSaveKamar(
@@ -1064,56 +1092,35 @@ public class KamarPanel extends JPanel {
             return false;
         }
 
-        // Save image to project folder
         String finalImagePath = "";
 
-        System.out.println("\n=== IMAGE SAVE PROCESS ===");
-        System.out.println("Edit Mode: " + (editId != null));
+        System.out.println("\n=== IMAGE SAVE PROCESS (FROM RESOURCES) ===");
+        System.out.println("Mode: " + (editId != null ? "EDIT" : "NEW"));
         System.out.println("Selected Image Path: " + selectedImagePath);
 
         if (editId != null) {
-            // MODE EDIT
             Kamar oldKamar = kamarDAO.getById(editId);
             String oldImagePath = (oldKamar != null) ? oldKamar.getImagePath() : "";
-
-            System.out.println("Old Image Path: " + oldImagePath);
 
             if (selectedImagePath != null && !selectedImagePath.isEmpty()) {
                 if (selectedImagePath.equals(oldImagePath)) {
                     finalImagePath = oldImagePath;
                     System.out.println("✅ Using existing image (no change)");
                 } else {
-                    if (selectedImagePath.startsWith("images/rooms/")) {
-                        finalImagePath = selectedImagePath;
-                        System.out.println("✅ Image already in project folder");
-                    } else {
-                        finalImagePath = saveImageToProject(selectedImagePath, nomor);
-                        if (finalImagePath.isEmpty()) {
-                            finalImagePath = selectedImagePath;
-                            System.out.println("⚠️ Save failed, using original path");
-                        }
-                    }
+                    finalImagePath = selectedImagePath;
+                    System.out.println("✅ Updated to new image from resources");
                 }
             } else {
                 finalImagePath = oldImagePath;
-                System.out.println("✅ Using old image");
+                System.out.println("✅ Keeping old image");
             }
         } else {
-            // MODE TAMBAH BARU
             if (selectedImagePath != null && !selectedImagePath.isEmpty()) {
-                if (selectedImagePath.startsWith("images/rooms/")) {
-                    finalImagePath = selectedImagePath;
-                    System.out.println("✅ Already in project");
-                } else {
-                    finalImagePath = saveImageToProject(selectedImagePath, nomor);
-                    if (finalImagePath.isEmpty()) {
-                        finalImagePath = selectedImagePath;
-                        System.out.println("⚠️ Save failed, using original");
-                    }
-                }
+                finalImagePath = selectedImagePath;
+                System.out.println("✅ Using selected image from resources");
             } else {
                 finalImagePath = "";
-                System.out.println("ℹ️ No image");
+                System.out.println("ℹ️ No image selected");
             }
         }
 
@@ -1128,7 +1135,7 @@ public class KamarPanel extends JPanel {
         kamar.setUkuran(ukuran);
         kamar.setFasilitas(fasilitas);
         kamar.setStatus(editId != null ? kamarDAO.getById(editId).getStatus() : "Tersedia");
-        kamar.setImagePath(finalImagePath); // ← PAKAI finalImagePath, BUKAN savedImagePath
+        kamar.setImagePath(finalImagePath);
 
         boolean success = editId != null ? kamarDAO.update(kamar) : kamarDAO.create(kamar);
 

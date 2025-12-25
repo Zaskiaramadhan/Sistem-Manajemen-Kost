@@ -188,5 +188,6 @@ public class PembayaranDAO {
      */
     public void refresh() {
         loadFromFile();
+        System.out.println("✅ PembayaranDAO refreshed from file");
     }
 }

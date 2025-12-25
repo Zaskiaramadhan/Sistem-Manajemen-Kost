@@ -13,7 +13,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
-public class LoginView extends JFrame {
+public class
+LoginView extends JFrame {
 
     private JTextField usernameField;
     private JPasswordField passwordField;
