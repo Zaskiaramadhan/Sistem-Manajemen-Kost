@@ -3,11 +3,13 @@
 Sistem Manajemen Kost RUMA adalah aplikasi desktop berbasis Java Swing yang dirancang untuk membantu pengelola kost dalam mengelola data kamar, penyewa, pembayaran, dashboard statistik, serta laporan bulanan secara terstruktur dan efisien. Aplikasi ini menerapkan konsep Object-Oriented Programming (OOP), arsitektur modular (MVC/Layered), serta penyimpanan data berbasis file.
 
 ___
+
 📌 **Executive Summary**
 
 Sistem Manajemen Rumah Kost menyediakan sebuah platform terpusat untuk mengelola informasi penting yang berkaitan dengan operasional rumah kost. Sistem ini mencakup pengelolaan data kamar, data penyewa, pencatatan pembayaran, serta penyajian laporan. Dengan adanya sistem ini, pengelola kost dapat mengurangi kesalahan pencatatan manual, meningkatkan efisiensi kerja, serta memperoleh data yang lebih terorganisir dan mudah diakses.Dokumentasi ini disusun sebagai panduan utama bagi pengembang maupun pengguna dalam memahami struktur sistem, cara instalasi, konfigurasi, serta arsitektur kode program.
 
 ___
+
 ⭐ **Fitur Utama Sistem**
 
 Aplikasi ini memiliki beberapa fitur inti yang mendukung operasional rumah kost, antara lain:
@@ -78,6 +80,7 @@ Data kamar meliputi:
 •Status (Terisi / Kosong)
 
 •Perhitungan otomatis kamar terisi dan kosong.
+___
 
 👤 **Manajemen Penyewa**
 
@@ -92,10 +95,12 @@ Data penyewa:
 •Tanggal masuk
 
 •Status (Aktif / Keluar)
+___
 
 💰 **Manajemen Pembayaran**
 
 Modul Manajemen Pembayaran pada sistem rumah kost berfungsi untuk mencatat dan mengelola pembayaran sewa bulanan penyewa secara terstruktur. Fitur ini memungkinkan pengelola memilih penyewa aktif, menentukan periode bulan dan tahun, memasukkan tanggal pembayaran, jumlah pembayaran, serta metode pembayaran yang digunakan. Setiap transaksi yang berhasil disimpan akan ditampilkan dalam tabel pembayaran lengkap dengan status pembayaran dan dapat difilter berdasarkan bulan tertentu. Selain itu, sistem juga menyediakan validasi input serta fitur penghapusan data pembayaran untuk menjaga keakuratan data administrasi.
+___
 
 📈 **Laporan & Statistik**
 
@@ -193,6 +198,7 @@ ___
 ___
 
 **1. Clone Repository**
+   
     git clone https://github.com/username/sistem-manajemen-kost.git
     cd sistem-manajemen-kost
 
