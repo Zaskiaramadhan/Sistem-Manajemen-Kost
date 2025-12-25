@@ -58,7 +58,7 @@ public class PenyewaPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(ColorPalette.BG_OFF_WHITE);
 
-        JLabel titleLabel = new JLabel("Kelola Penyewa");
+        JLabel titleLabel = new JLabel("KELOLA PENYEWA");
         titleLabel.setFont(FontManager.FONT_H1);
         titleLabel.setForeground(ColorPalette.NAVY_DARK);
 

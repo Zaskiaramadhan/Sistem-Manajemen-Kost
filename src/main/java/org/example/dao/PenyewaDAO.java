@@ -1,6 +1,7 @@
 package org.example.dao;
 
 import org.example.model.Penyewa;
+import org.example.model.Kamar;
 import org.example.util.FileHandler;
 
 import java.time.format.DateTimeFormatter;
@@ -36,9 +37,13 @@ public class PenyewaDAO {
         try {
             penyewaList.add(penyewa);
 
-            // Update status kamar jadi "Terisi"
-            KamarDAO.getInstance().getById(penyewa.getIdKamar()).setStatus("Terisi");
-            KamarDAO.getInstance().update(KamarDAO.getInstance().getById(penyewa.getIdKamar()));
+            // ✅ PERBAIKAN: Update status kamar jadi "Terisi"
+            Kamar kamar = KamarDAO.getInstance().getById(penyewa.getIdKamar());
+            if (kamar != null) {
+                kamar.setStatus("Terisi");
+                KamarDAO.getInstance().update(kamar);
+                System.out.println("✅ Kamar " + kamar.getNomorKamar() + " status updated to: Terisi");
+            }
 
             return saveToFile();
         } catch (Exception e) {
@@ -110,9 +115,13 @@ public class PenyewaDAO {
             if (penyewa != null) {
                 penyewa.setStatus("Non-Aktif");
 
-                // Update status kamar jadi "Tersedia"
-                KamarDAO.getInstance().getById(penyewa.getIdKamar()).setStatus("Tersedia");
-                KamarDAO.getInstance().update(KamarDAO.getInstance().getById(penyewa.getIdKamar()));
+                // ✅ PERBAIKAN: Update status kamar jadi "Tersedia"
+                Kamar kamar = KamarDAO.getInstance().getById(penyewa.getIdKamar());
+                if (kamar != null) {
+                    kamar.setStatus("Tersedia");
+                    KamarDAO.getInstance().update(kamar);
+                    System.out.println("✅ Kamar " + kamar.getNomorKamar() + " status updated to: Tersedia");
+                }
 
                 return update(penyewa);
             }

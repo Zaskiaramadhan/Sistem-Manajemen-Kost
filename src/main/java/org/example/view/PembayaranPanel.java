@@ -56,7 +56,7 @@ public class PembayaranPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(ColorPalette.BG_OFF_WHITE);
 
-        JLabel titleLabel = new JLabel("💰 Pembayaran Bulanan");
+        JLabel titleLabel = new JLabel("PEMBAYARAN");
         titleLabel.setFont(FontManager.FONT_H1);
         titleLabel.setForeground(ColorPalette.NAVY_DARK);
 
@@ -71,18 +71,24 @@ public class PembayaranPanel extends JPanel {
         panel.setBorder(AppConfig.createCardBorder());
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-        JLabel titleLabel = new JLabel("📝 Input Pembayaran Baru");
+        // Title label - CENTERED
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        titlePanel.setBackground(Color.WHITE);
+
+        JLabel titleLabel = new JLabel("Input Pembayaran Baru");
         titleLabel.setFont(FontManager.FONT_H3);
         titleLabel.setForeground(ColorPalette.NAVY_DARK);
-        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        panel.add(titleLabel);
-        panel.add(Box.createVerticalStrut(15));
+        titlePanel.add(titleLabel);
+        titlePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
 
-        // Form grid
-        JPanel formGrid = new JPanel(new GridLayout(2, 3, 15, 15));
-        formGrid.setBackground(Color.WHITE);
-        formGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
+        panel.add(titlePanel);
+        panel.add(Box.createVerticalStrut(30));
+
+        // Form grid - Row 1
+        JPanel formGrid1 = new JPanel(new GridLayout(1, 2, 15, 15));
+        formGrid1.setBackground(Color.WHITE);
+        formGrid1.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
 
         // Penyewa combo
         JComboBox<String> penyewaCombo = new JComboBox<>();
@@ -91,18 +97,28 @@ public class PembayaranPanel extends JPanel {
             penyewaCombo.addItem(p.getIdPenyewa() + " - " + p.getNama());
         }
 
-        // Bulan combo
-        JComboBox<String> bulanCombo = new JComboBox<>(new String[]{
-                "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-                "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-        });
-        bulanCombo.setFont(FontManager.FONT_BODY);
-        bulanCombo.setSelectedItem(DateUtil.today().getMonth().toString());
+        // Bulan/Tahun combo
+        JComboBox<String> bulanTahunCombo = new JComboBox<>();
+        bulanTahunCombo.setFont(FontManager.FONT_BODY);
 
-        // Tahun
-        JTextField tahunField = new JTextField(String.valueOf(LocalDate.now().getYear()));
-        tahunField.setFont(FontManager.FONT_BODY);
-        tahunField.setBorder(AppConfig.createInputBorder());
+        // Generate bulan-tahun options
+        LocalDate now = LocalDate.now();
+        for (int i = 0; i < 12; i++) {
+            LocalDate date = now.plusMonths(i);
+            String bulanIndo = getBulanIndonesia(date.getMonthValue());
+            bulanTahunCombo.addItem(bulanIndo + " " + date.getYear());
+        }
+
+        formGrid1.add(createFormField("Pilih Penyewa:", penyewaCombo));
+        formGrid1.add(createFormField("Bulan/Tahun:", bulanTahunCombo));
+
+        panel.add(formGrid1);
+        panel.add(Box.createVerticalStrut(10));
+
+        // Form grid - Row 2
+        JPanel formGrid2 = new JPanel(new GridLayout(1, 3, 15, 15));
+        formGrid2.setBackground(Color.WHITE);
+        formGrid2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
 
         // Tanggal bayar
         JTextField tanggalField = new JTextField(DateUtil.formatDate(LocalDate.now()));
@@ -118,34 +134,41 @@ public class PembayaranPanel extends JPanel {
         JComboBox<String> metodeCombo = new JComboBox<>(new String[]{"Cash", "Transfer", "E-Wallet"});
         metodeCombo.setFont(FontManager.FONT_BODY);
 
-        formGrid.add(createLabel("Pilih Penyewa:"));
-        formGrid.add(createLabel("Bulan:"));
-        formGrid.add(createLabel("Tahun:"));
-        formGrid.add(penyewaCombo);
-        formGrid.add(bulanCombo);
-        formGrid.add(tahunField);
-
-        panel.add(formGrid);
-        panel.add(Box.createVerticalStrut(10));
-
-        JPanel formGrid2 = new JPanel(new GridLayout(1, 3, 15, 15));
-        formGrid2.setBackground(Color.WHITE);
-        formGrid2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
-
         formGrid2.add(createFormField("Tanggal Bayar:", tanggalField));
         formGrid2.add(createFormField("Jumlah (Rp):", jumlahField));
         formGrid2.add(createFormField("Metode Bayar:", metodeCombo));
 
         panel.add(formGrid2);
+        panel.add(Box.createVerticalStrut(10));
+
+        // Form grid - Row 3: Catatan
+        JPanel formGrid3 = new JPanel(new BorderLayout(5, 5));
+        formGrid3.setBackground(Color.WHITE);
+        formGrid3.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+
+        JLabel catatanLabel = new JLabel("Catatan:");
+        catatanLabel.setFont(FontManager.FONT_BODY_SMALL);
+        catatanLabel.setForeground(ColorPalette.GRAY_DARK);
+
+        JTextField catatanField = new JTextField();
+        catatanField.setFont(FontManager.FONT_BODY);
+        catatanField.setBorder(AppConfig.createInputBorder());
+        catatanField.setPreferredSize(new Dimension(0, AppConfig.INPUT_HEIGHT));
+
+        formGrid3.add(catatanLabel, BorderLayout.NORTH);
+        formGrid3.add(catatanField, BorderLayout.CENTER);
+
+        panel.add(formGrid3);
         panel.add(Box.createVerticalStrut(15));
 
         // Save button
         RButton saveButton = new RButton("💾 Simpan Pembayaran");
         saveButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
         saveButton.addActionListener(e -> {
-            if (savePembayaran(penyewaCombo, bulanCombo, tahunField, tanggalField, jumlahField, metodeCombo)) {
+            if (savePembayaran(penyewaCombo, bulanTahunCombo, tanggalField, jumlahField, metodeCombo)) {
                 // Reset form
                 jumlahField.setText("");
+                catatanField.setText("");
                 refreshData();
             }
         });
@@ -160,7 +183,7 @@ public class PembayaranPanel extends JPanel {
     }
 
     private JPanel createTablePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel(new BorderLayout(0, 15));
         panel.setBackground(Color.WHITE);
         panel.setBorder(AppConfig.createCardBorder());
 
@@ -170,6 +193,7 @@ public class PembayaranPanel extends JPanel {
 
         JLabel filterLabel = new JLabel("Filter Bulan:");
         filterLabel.setFont(FontManager.FONT_BODY);
+        filterLabel.setForeground(ColorPalette.GRAY_DARK);
 
         filterBulanCombo = new JComboBox<>();
         filterBulanCombo.setFont(FontManager.FONT_BODY);
@@ -187,7 +211,7 @@ public class PembayaranPanel extends JPanel {
         panel.add(filterPanel, BorderLayout.NORTH);
 
         // Table
-        String[] columns = {"ID", "Penyewa", "Bulan-Tahun", "Tanggal Bayar", "Jumlah", "Metode", "Status"};
+        String[] columns = {"ID", "Nama Penyewa", "Bulan-Tahun", "Tanggal Bayar", "Jumlah", "Metode", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -200,34 +224,97 @@ public class PembayaranPanel extends JPanel {
         table.setRowHeight(AppConfig.TABLE_ROW_HEIGHT);
         table.setSelectionBackground(ColorPalette.BG_CREAM);
         table.setSelectionForeground(ColorPalette.NAVY_DARK);
+        table.setShowGrid(true);
+        table.setGridColor(ColorPalette.GRAY_LIGHT);
+        table.setIntercellSpacing(new Dimension(1, 1));
 
-        table.getTableHeader().setBackground(ColorPalette.NAVY_DARK);
-        table.getTableHeader().setForeground(Color.WHITE);
-        table.getTableHeader().setFont(FontManager.FONT_H4);
+        // Header styling with custom renderer
+        DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                c.setBackground(new Color(44, 62, 80)); // Navy Dark
+                c.setForeground(Color.WHITE);
+                setFont(FontManager.FONT_H4);
+                setHorizontalAlignment(CENTER);
+                setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+                return c;
+            }
+        };
+
+        // Apply header renderer to all columns
+        for (int i = 0; i < table.getColumnModel().getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setHeaderRenderer(headerRenderer);
+        }
+
         table.getTableHeader().setPreferredSize(new Dimension(0, 45));
+        table.getTableHeader().setReorderingAllowed(false);
 
-        table.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
+        // Center alignment for all cells
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
+        // Custom renderer for alternating colors and status column
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
                                                            boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-                if (!isSelected) {
-                    String status = (String) value;
-                    if ("Lunas".equals(status)) {
-                        c.setForeground(ColorPalette.SUCCESS_GREEN);
-                    } else {
-                        c.setForeground(ColorPalette.WARNING_ORANGE);
-                    }
-                    setFont(FontManager.FONT_BUTTON);
-                }
                 setHorizontalAlignment(CENTER);
+                setFont(FontManager.FONT_BODY);
+
+                if (!isSelected) {
+                    // Alternating row colors
+                    if (row % 2 == 0) {
+                        c.setBackground(Color.WHITE);
+                    } else {
+                        c.setBackground(ColorPalette.BG_LIGHT_BLUE);
+                    }
+
+                    // Status column with colored text
+                    if (column == 6) {
+                        String status = (String) value;
+                        if ("Lunas".equals(status)) {
+                            c.setForeground(ColorPalette.SUCCESS_GREEN);
+                            setFont(FontManager.FONT_BUTTON);
+                        } else if ("Belum Bayar".equals(status)) {
+                            c.setForeground(ColorPalette.WARNING_ORANGE);
+                            setFont(FontManager.FONT_BUTTON);
+                        } else if ("Terlambat".equals(status)) {
+                            c.setForeground(ColorPalette.DANGER_RED);
+                            setFont(FontManager.FONT_BUTTON);
+                        } else {
+                            c.setForeground(ColorPalette.GRAY_DARK);
+                        }
+                    } else {
+                        c.setForeground(ColorPalette.NAVY_DARK);
+                    }
+                }
+
                 return c;
             }
         });
 
+        // Column widths
+        table.getColumnModel().getColumn(0).setPreferredWidth(80);   // ID
+        table.getColumnModel().getColumn(1).setPreferredWidth(180);  // Nama
+        table.getColumnModel().getColumn(2).setPreferredWidth(120);  // Bulan
+        table.getColumnModel().getColumn(3).setPreferredWidth(120);  // Tanggal
+        table.getColumnModel().getColumn(4).setPreferredWidth(120);  // Jumlah
+        table.getColumnModel().getColumn(5).setPreferredWidth(100);  // Metode
+        table.getColumnModel().getColumn(6).setPreferredWidth(100);  // Status
+
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(null);
+        scrollPane.setBorder(BorderFactory.createLineBorder(ColorPalette.GRAY_LIGHT, 1));
+        scrollPane.getViewport().setBackground(Color.WHITE);
+        scrollPane.setPreferredSize(new Dimension(0, 400));
+        scrollPane.setMinimumSize(new Dimension(0, 300));
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // Action panel
@@ -243,8 +330,8 @@ public class PembayaranPanel extends JPanel {
         return panel;
     }
 
-    private boolean savePembayaran(JComboBox<String> penyewaCombo, JComboBox<String> bulanCombo,
-                                   JTextField tahunField, JTextField tanggalField, JTextField jumlahField, JComboBox<String> metodeCombo) {
+    private boolean savePembayaran(JComboBox<String> penyewaCombo, JComboBox<String> bulanTahunCombo,
+                                   JTextField tanggalField, JTextField jumlahField, JComboBox<String> metodeCombo) {
 
         if (penyewaCombo.getSelectedItem() == null) {
             JOptionPane.showMessageDialog(this, "Tidak ada penyewa aktif!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -252,14 +339,13 @@ public class PembayaranPanel extends JPanel {
         }
 
         String idPenyewa = ((String) penyewaCombo.getSelectedItem()).split(" - ")[0];
-        String bulan = (String) bulanCombo.getSelectedItem();
-        String tahun = tahunField.getText().trim();
+        String bulanTahun = (String) bulanTahunCombo.getSelectedItem();
         String tanggalStr = tanggalField.getText().trim();
         String jumlahStr = jumlahField.getText().trim();
         String metode = (String) metodeCombo.getSelectedItem();
 
-        if (!ValidationUtil.isNotEmpty(tahun) || !ValidationUtil.isNotEmpty(jumlahStr)) {
-            JOptionPane.showMessageDialog(this, "Semua field harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
+        if (!ValidationUtil.isNotEmpty(jumlahStr)) {
+            JOptionPane.showMessageDialog(this, "Jumlah harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
 
@@ -274,7 +360,6 @@ public class PembayaranPanel extends JPanel {
             return false;
         }
 
-        String bulanTahun = bulan + " " + tahun;
         double jumlah = Double.parseDouble(jumlahStr);
 
         Pembayaran pembayaran = new Pembayaran();
@@ -352,13 +437,6 @@ public class PembayaranPanel extends JPanel {
         }
     }
 
-    private JLabel createLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(FontManager.FONT_BODY);
-        label.setForeground(ColorPalette.GRAY_DARK);
-        return label;
-    }
-
     private JPanel createFormField(String label, JComponent field) {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBackground(Color.WHITE);
@@ -375,6 +453,12 @@ public class PembayaranPanel extends JPanel {
         panel.add(field, BorderLayout.CENTER);
 
         return panel;
+    }
+
+    private String getBulanIndonesia(int month) {
+        String[] bulanIndo = {"Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                "Juli", "Agustus", "September", "Oktober", "November", "Desember"};
+        return bulanIndo[month - 1];
     }
 
     public void refreshData() {

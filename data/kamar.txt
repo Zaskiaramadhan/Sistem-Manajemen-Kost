@@ -1,1 +1,0 @@
-K001,K01,Double,1200000.00,6 x 6 meter,Kasur,Rak Buku,images\rooms\K01_1766648670710.jpg

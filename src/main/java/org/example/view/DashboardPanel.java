@@ -95,7 +95,7 @@ public class DashboardPanel extends JPanel {
         panel.setBackground(ColorPalette.BG_OFF_WHITE);
         panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
 
-        // Card Total Kamar - menggunakan icon-total.jpg
+        // Card Total Kamar
         panel.add(createImageStatCard(
                 "Total Kamar",
                 "0",
@@ -104,7 +104,7 @@ public class DashboardPanel extends JPanel {
                 "images/icon-total.jpg"
         ));
 
-        // Card Terisi - menggunakan icon-terisi.jpg
+        // Card Terisi
         panel.add(createImageStatCard(
                 "Kamar Terisi",
                 "0",
@@ -113,7 +113,7 @@ public class DashboardPanel extends JPanel {
                 "images/icon-terisi.jpg"
         ));
 
-        // Card Tersedia - menggunakan icon-tersedia.jpg
+        // Card Tersedia
         panel.add(createImageStatCard(
                 "Kamar Tersedia",
                 "0",
@@ -126,7 +126,6 @@ public class DashboardPanel extends JPanel {
     }
 
     private JPanel createImageStatCard(String title, String value, Color color, String id, String imagePath) {
-        // Panel dengan overlay gambar dan text di tengah
         JPanel card = new JPanel() {
             private BufferedImage bgImage;
 
@@ -135,12 +134,12 @@ public class DashboardPanel extends JPanel {
                     File imgFile = new File(imagePath);
                     if (imgFile.exists()) {
                         bgImage = ImageIO.read(imgFile);
-                        System.out.println("✓ Berhasil memuat gambar: " + imagePath);
+                        System.out.println("✓ Dashboard image loaded: " + imagePath);
                     } else {
-                        System.out.println("✗ File tidak ditemukan: " + imagePath);
+                        System.out.println("✗ Dashboard image not found: " + imagePath);
                     }
                 } catch (Exception e) {
-                    System.out.println("✗ Error membaca gambar: " + imagePath + " - " + e.getMessage());
+                    System.out.println("✗ Error loading dashboard image: " + imagePath);
                 }
             }
 
@@ -152,15 +151,17 @@ public class DashboardPanel extends JPanel {
                 g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
                 if (bgImage != null) {
-                    // Gambar background full size
                     g2d.drawImage(bgImage, 0, 0, getWidth(), getHeight(), null);
-
-                    // Overlay semi-transparan untuk readability
-                    g2d.setColor(new Color(0, 0, 0, 130)); // Black with 40% opacity
+                    // Overlay untuk readability
+                    g2d.setColor(new Color(0, 0, 0, 130));
                     g2d.fillRect(0, 0, getWidth(), getHeight());
                 } else {
-                    // Fallback: colored background
-                    g2d.setColor(color);
+                    // Fallback gradient
+                    GradientPaint gradient = new GradientPaint(
+                            0, 0, color,
+                            getWidth(), getHeight(), color.darker()
+                    );
+                    g2d.setPaint(gradient);
                     g2d.fillRect(0, 0, getWidth(), getHeight());
                 }
             }
@@ -172,19 +173,18 @@ public class DashboardPanel extends JPanel {
                 BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
-        // Panel untuk text di tengah
         JPanel textPanel = new JPanel();
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
-        textPanel.setOpaque(false); // Transparent agar gambar terlihat
+        textPanel.setOpaque(false);
 
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(FontManager.FONT_BODY_LARGE);
-        titleLabel.setForeground(Color.WHITE); // Text putih agar kontras dengan gambar
+        titleLabel.setForeground(Color.WHITE);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel valueLabel = new JLabel(value);
         valueLabel.setFont(FontManager.FONT_NUMBER_BIG);
-        valueLabel.setForeground(Color.WHITE); // Text putih
+        valueLabel.setForeground(Color.WHITE);
         valueLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Save reference
@@ -204,7 +204,6 @@ public class DashboardPanel extends JPanel {
         textPanel.add(Box.createVerticalStrut(5));
         textPanel.add(valueLabel);
 
-        // GridBagConstraints untuk center alignment
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -225,7 +224,6 @@ public class DashboardPanel extends JPanel {
         panel.setBorder(AppConfig.createCardBorder());
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-        // Title
         JLabel titleLabel = new JLabel("Status Pembayaran - " + DateUtil.getCurrentMonthYear());
         titleLabel.setFont(FontManager.FONT_H3);
         titleLabel.setForeground(ColorPalette.NAVY_DARK);
@@ -234,27 +232,23 @@ public class DashboardPanel extends JPanel {
         panel.add(titleLabel);
         panel.add(Box.createVerticalStrut(15));
 
-        // Stats Container
         JPanel statsContainer = new JPanel();
         statsContainer.setLayout(new BoxLayout(statsContainer, BoxLayout.Y_AXIS));
         statsContainer.setBackground(Color.WHITE);
         statsContainer.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Sudah Bayar
         JPanel row1 = createStatRow("Sudah Bayar");
         sudahBayarLabel = createStatValueLabel("0 orang (0%)");
         row1.add(sudahBayarLabel);
         statsContainer.add(row1);
         statsContainer.add(Box.createVerticalStrut(10));
 
-        // Belum Bayar
         JPanel row2 = createStatRow("Belum Bayar");
         belumBayarLabel = createStatValueLabel("0 orang");
         row2.add(belumBayarLabel);
         statsContainer.add(row2);
         statsContainer.add(Box.createVerticalStrut(10));
 
-        // Total Pemasukan
         JPanel row3 = createStatRow("Total Pemasukan");
         totalPemasukanLabel = createStatValueLabel("Rp 0");
         row3.add(totalPemasukanLabel);
@@ -290,9 +284,8 @@ public class DashboardPanel extends JPanel {
     }
 
     private void updateNotifications() {
-        // Clear previous notifications
         Component[] components = notificationPanel.getComponents();
-        for (int i = components.length - 1; i > 0; i--) { // Keep title
+        for (int i = components.length - 1; i > 0; i--) {
             notificationPanel.remove(i);
         }
 
@@ -304,14 +297,12 @@ public class DashboardPanel extends JPanel {
         String bulanIni = DateUtil.getCurrentMonthYear();
         LocalDate today = LocalDate.now();
 
-        // Check pembayaran yang belum dibayar
         for (Penyewa penyewa : penyewaDAO.getActivePenyewa()) {
             boolean sudahBayar = pembayaranDAO.isPaid(penyewa.getIdPenyewa(), bulanIni);
 
             if (!sudahBayar) {
                 String nomorKamar = kamarDAO.getById(penyewa.getIdKamar()).getNomorKamar();
 
-                // Check jika sudah lewat tanggal 5 (terlambat)
                 if (today.getDayOfMonth() > 5) {
                     int hariTerlambat = today.getDayOfMonth() - 5;
                     notifications.add("Kamar " + nomorKamar + " (" + penyewa.getNama() + ") - Pembayaran terlambat " + hariTerlambat + " hari");
@@ -350,7 +341,7 @@ public class DashboardPanel extends JPanel {
         JLabel label = new JLabel(labelText);
         label.setFont(FontManager.FONT_BODY_LARGE);
         label.setForeground(ColorPalette.GRAY_DARK);
-        label.setPreferredSize(new Dimension(150, 25)); // Fixed width untuk alignment
+        label.setPreferredSize(new Dimension(150, 25));
 
         JLabel colon = new JLabel(": ");
         colon.setFont(FontManager.FONT_BODY_LARGE);
@@ -362,13 +353,6 @@ public class DashboardPanel extends JPanel {
         return row;
     }
 
-    private JLabel createStatLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(FontManager.FONT_BODY_LARGE);
-        label.setForeground(ColorPalette.GRAY_DARK);
-        return label;
-    }
-
     private JLabel createStatValueLabel(String text) {
         JLabel label = new JLabel(text);
         label.setFont(FontManager.FONT_NUMBER_MED);
@@ -377,20 +361,27 @@ public class DashboardPanel extends JPanel {
     }
 
     public void refreshData() {
+        // ✅ PERBAIKAN: Force refresh dari file
         KamarDAO kamarDAO = KamarDAO.getInstance();
         PenyewaDAO penyewaDAO = PenyewaDAO.getInstance();
         PembayaranDAO pembayaranDAO = PembayaranDAO.getInstance();
+
+        // Reload data dari file
+        kamarDAO.refresh();
+        penyewaDAO.refresh();
 
         // Update statistik kamar
         int totalKamar = kamarDAO.getTotalRooms();
         int terisi = kamarDAO.getOccupiedRooms();
         int kosong = kamarDAO.getAvailableRoomsCount();
 
+        System.out.println("📊 Dashboard Stats: Total=" + totalKamar + ", Terisi=" + terisi + ", Kosong=" + kosong);
+
         totalKamarValueLabel.setText(String.valueOf(totalKamar));
         terisiValueLabel.setText(String.valueOf(terisi));
         kosongValueLabel.setText(String.valueOf(kosong));
 
-        // Update statistik pembayaran bulan ini
+        // Update statistik pembayaran
         String bulanIni = DateUtil.getCurrentMonthYear();
         int totalPenyewa = penyewaDAO.getTotalActivePenyewa();
         List<Pembayaran> pembayaranList = pembayaranDAO.getPaidThisMonth(bulanIni);
@@ -398,14 +389,12 @@ public class DashboardPanel extends JPanel {
         int belumBayar = totalPenyewa - sudahBayar;
         double totalPemasukan = pembayaranDAO.getTotalIncomeByMonth(bulanIni);
 
-        // Hitung persentase otomatis
         double persenSudahBayar = totalPenyewa > 0 ? (sudahBayar * 100.0 / totalPenyewa) : 0;
 
         sudahBayarLabel.setText(String.format("%d orang (%.0f%%)", sudahBayar, persenSudahBayar));
         belumBayarLabel.setText(belumBayar + " orang");
         totalPemasukanLabel.setText(String.format("Rp %,.0f", totalPemasukan));
 
-        // Update notifications
         updateNotifications();
     }
 }

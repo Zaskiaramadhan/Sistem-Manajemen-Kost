@@ -34,7 +34,9 @@ public class KamarDAO {
     public boolean create(Kamar kamar) {
         try {
             kamarList.add(kamar);
-            return saveToFile();
+            boolean saved = saveToFile();
+            System.out.println("✅ Kamar created: " + kamar.getNomorKamar() + " | Status: " + kamar.getStatus());
+            return saved;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -75,7 +77,9 @@ public class KamarDAO {
             for (int i = 0; i < kamarList.size(); i++) {
                 if (kamarList.get(i).getIdKamar().equals(updatedKamar.getIdKamar())) {
                     kamarList.set(i, updatedKamar);
-                    return saveToFile();
+                    boolean saved = saveToFile();
+                    System.out.println("✅ Kamar updated: " + updatedKamar.getNomorKamar() + " | Status: " + updatedKamar.getStatus());
+                    return saved;
                 }
             }
             return false;
@@ -158,6 +162,10 @@ public class KamarDAO {
         }
 
         System.out.println("✅ Loaded " + kamarList.size() + " kamar from file");
+        // Debug: print semua status
+        for (Kamar k : kamarList) {
+            System.out.println("   - " + k.getNomorKamar() + " | Status: " + k.getStatus());
+        }
     }
 
     /**
@@ -168,7 +176,11 @@ public class KamarDAO {
                 .map(Kamar::toFileString)
                 .collect(Collectors.toList());
 
-        return FileHandler.writeAllLines(FileHandler.KAMAR_FILE, lines);
+        boolean result = FileHandler.writeAllLines(FileHandler.KAMAR_FILE, lines);
+        if (result) {
+            System.out.println("💾 Saved " + lines.size() + " kamar to file");
+        }
+        return result;
     }
 
     /**
