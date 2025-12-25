@@ -12,19 +12,19 @@ ___
 
 Aplikasi ini memiliki beberapa fitur inti yang mendukung operasional rumah kost, antara lain:
 
-Manajemen Kamar
+Manajemen Kamar :
 Mengelola data kamar yang tersedia, termasuk nomor kamar, status ketersediaan, dan informasi terkait lainnya.
 
-Manajemen Penyewa
+Manajemen Penyewa :
 Menyimpan dan mengelola data penyewa seperti identitas, kamar yang ditempati, serta masa sewa.
 
-Manajemen Pembayaran
+Manajemen Pembayaran :
 Mencatat transaksi pembayaran sewa kost dan memastikan data pembayaran tersimpan dengan baik.
 
-Dashboard Informasi
+Dashboard Informasi :
 Menampilkan ringkasan data penting seperti jumlah kamar, jumlah penyewa aktif, dan status pembayaran.
 
-Laporan Administratif
+Laporan Administratif :
 Menyediakan laporan data kamar, penyewa, dan pembayaran untuk kebutuhan evaluasi dan dokumentasi.
 
 ___
@@ -65,8 +65,61 @@ Ringkasan jumlah kamar:
     •Notifikasi keterlambatan pembayaran
 ___
 
-📁 Project Structure (Source Code)
-    src/
+🏠 **Manajemen Kamar**
+
+Data kamar meliputi:
+
+•ID & nomor kamar
+
+•Harga
+
+•Fasilitas
+
+•Status (Terisi / Kosong)
+
+•Perhitungan otomatis kamar terisi dan kosong.
+
+👤 **Manajemen Penyewa**
+
+Data penyewa:
+
+•Nama
+
+•Nomor telepon
+
+•Kamar yang ditempati
+
+•Tanggal masuk
+
+•Status (Aktif / Keluar)
+
+💰 **Manajemen Pembayaran**
+
+Modul Manajemen Pembayaran pada sistem rumah kost berfungsi untuk mencatat dan mengelola pembayaran sewa bulanan penyewa secara terstruktur. Fitur ini memungkinkan pengelola memilih penyewa aktif, menentukan periode bulan dan tahun, memasukkan tanggal pembayaran, jumlah pembayaran, serta metode pembayaran yang digunakan. Setiap transaksi yang berhasil disimpan akan ditampilkan dalam tabel pembayaran lengkap dengan status pembayaran dan dapat difilter berdasarkan bulan tertentu. Selain itu, sistem juga menyediakan validasi input serta fitur penghapusan data pembayaran untuk menjaga keakuratan data administrasi.
+
+📈 **Laporan & Statistik**
+
+Ringkasan bulanan:
+
+•Total pemasukan
+
+•Penyewa sudah bayar
+
+•Penyewa belum bayar
+
+•Keterlambatan pembayaran
+
+•Persentase hunian kamar
+
+•Tabel detail pembayaran.
+
+•Grafik pemasukan 6 bulan terakhir (Bar Chart).
+
+•Placeholder fitur Export PDF
+___
+
+📁 **Project Structure (Source Code)
+    src/**
 
 └── org.example
 
@@ -139,8 +192,12 @@ ___
         └── LaporanPanel.java
 ___
 
+**1. Clone Repository**
+    git clone https://github.com/username/sistem-manajemen-kost.git
+    cd sistem-manajemen-kost
 
-2. Menjalankan Aplikasi
+
+**2. Menjalankan Aplikasi**
 
 Java Development Kit (JDK) yang terpasang pada sistem.
 
