@@ -1,14 +1,14 @@
-🏠 Sistem Manajemen Kost / Boarding House (RUMA)
+🏠 **Sistem Manajemen Kost / Boarding House (RUMA)**
 
 Sistem Manajemen Kost RUMA adalah aplikasi desktop berbasis Java Swing yang dirancang untuk membantu pengelola kost dalam mengelola data kamar, penyewa, pembayaran, dashboard statistik, serta laporan bulanan secara terstruktur dan efisien. Aplikasi ini menerapkan konsep Object-Oriented Programming (OOP), arsitektur modular (MVC/Layered), serta penyimpanan data berbasis file.
 
 ___
-📌 Executive Summary
+📌 **Executive Summary**
 
 Sistem Manajemen Rumah Kost menyediakan sebuah platform terpusat untuk mengelola informasi penting yang berkaitan dengan operasional rumah kost. Sistem ini mencakup pengelolaan data kamar, data penyewa, pencatatan pembayaran, serta penyajian laporan. Dengan adanya sistem ini, pengelola kost dapat mengurangi kesalahan pencatatan manual, meningkatkan efisiensi kerja, serta memperoleh data yang lebih terorganisir dan mudah diakses.Dokumentasi ini disusun sebagai panduan utama bagi pengembang maupun pengguna dalam memahami struktur sistem, cara instalasi, konfigurasi, serta arsitektur kode program.
 
 ___
-⭐ Fitur Utama Sistem
+⭐ **Fitur Utama Sistem**
 
 Aplikasi ini memiliki beberapa fitur inti yang mendukung operasional rumah kost, antara lain:
 
@@ -29,7 +29,7 @@ Menyediakan laporan data kamar, penyewa, dan pembayaran untuk kebutuhan evaluasi
 
 ___
 
-🔐 Login & Keamanan Dasar
+🔐 **Login & Keamanan Dasar**
 
 Halaman login dengan tampilan modern (custom UI).
 
@@ -39,7 +39,7 @@ Autentikasi sederhana (hardcoded untuk demo).
 
 Redirect otomatis ke Main Dashboard setelah login berhasil.
 ___
-📊 Dashboard
+📊 **Dashboard**
 
 Ringkasan jumlah kamar:
 • Bullet manual (boleh, tapi tidak standar Markdown)
@@ -66,47 +66,83 @@ Ringkasan jumlah kamar:
 ___
 
 📁 Project Structure (Source Code)
-src/
+    src/
+
 └── org.example
+
     ├── App.java
+    
     │
+    
     ├── component/
+    
     │   ├── RButton.java
+    
     │   └── Sidebar.java
+    
     │
+    
     ├── config/
+    
     │   ├── AppConfig.java
+    
     │   ├── ColorPalette.java
+    
     │   └── FontManager.java
+    
     │
+    
     ├── dao/
+    
     │   ├── KamarDAO.java
+    
     │   ├── PenyewaDAO.java
+    
     │   └── PembayaranDAO.java
+    
     │
+    
     ├── model/
+    
     │   ├── Kamar.java
+    
     │   ├── Penyewa.java
+    
     │   └── Pembayaran.java
+    
     │
+    
     ├── util/
+    
     │   ├── DateUtil.java
+    
     │   ├── FileHandler.java
+    
     │   └── ValidationUtil.java
+    
     │
+    
     └── view/
+    
         ├── LoginView.java
+        
         ├── MainFrame.java
+        
         ├── DashboardPanel.java
+        
         ├── KamarPanel.java
+        
         ├── PenyewaPanel.java
+        
         ├── PembayaranPanel.java
+        
         └── LaporanPanel.java
 ___
 
+
 2. Menjalankan Aplikasi
 
-Pastikan Java Development Kit (JDK) telah terpasang pada sistem.
+Java Development Kit (JDK) yang terpasang pada sistem.
 
-javac App.java
-java App
+    javac App.java
+    java App
