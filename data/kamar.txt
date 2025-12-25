@@ -1,1 +1,1 @@
-K001,K01,Double,1200000.00,6 x 6 meter,Kasur,Lemari,Meja Belajar,Meja Rias,Cermin,Rak Barang,Rak Buku,AC,Water Heater,Kamar Mandi Dalam,Jendela,Tirai/Gorden,WiFi,Terisi,images/rooms/Double (1).jpg
+K001,K01,Double,1200000.00,6 x 6 meter,Kasur,Rak Buku,images\rooms\K01_1766648670710.jpg

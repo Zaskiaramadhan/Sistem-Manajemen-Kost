@@ -271,7 +271,7 @@ public class KamarPanel extends JPanel {
 
     private void showDetailDialog(Kamar kamar) {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Detail Kamar", true);
-        dialog.setSize(700, 750);
+        dialog.setSize(600, 750);
         dialog.setLocationRelativeTo(this);
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
@@ -566,10 +566,14 @@ public class KamarPanel extends JPanel {
         String title = isEdit ? "Edit Kamar" : "Tambah Kamar Baru";
 
         // Reset selected image path
-        selectedImagePath = isEdit && kamar.getImagePath() != null ? kamar.getImagePath() : "";
+        if (isEdit && kamar.getImagePath() != null && !kamar.getImagePath().isEmpty()) {
+            selectedImagePath = kamar.getImagePath();
+        } else {
+            selectedImagePath = "";
+        }
 
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), title, true);
-        dialog.setSize(600, 750);
+        dialog.setSize(600, 730);
         dialog.setLocationRelativeTo(this);
 
         JPanel mainPanel = new JPanel();
@@ -879,6 +883,7 @@ public class KamarPanel extends JPanel {
         if (kamar != null && kamar.getImagePath() != null && !kamar.getImagePath().isEmpty()) {
             File f = new File(kamar.getImagePath());
             fileLabel.setText(f.getName());
+            selectedImagePath = kamar.getImagePath();
         }
 
         RButton chooseButton = new RButton("Pilih Gambar", RButton.ButtonType.SECONDARY);
@@ -906,10 +911,17 @@ public class KamarPanel extends JPanel {
                 selectedImagePath = selectedFile.getAbsolutePath();
                 fileLabel.setText(selectedFile.getName());
 
+                System.out.println("Image selected: " + selectedImagePath);
+
                 // Load preview
                 try {
                     BufferedImage img = ImageIO.read(selectedFile);
-                    previewPanel.setPreviewImage(img);
+                    if (img != null) { // ← TAMBAHKAN IF INI
+                        previewPanel.setPreviewImage(img);
+                        System.out.println("Preview loaded successfully");
+                    } else {
+                        System.out.println("Failed to load image as BufferedImage");
+                    }
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     JOptionPane.showMessageDialog(KamarPanel.this,
@@ -947,43 +959,76 @@ public class KamarPanel extends JPanel {
 
     private String saveImageToProject(String sourceImagePath, String nomorKamar) {
         if (sourceImagePath == null || sourceImagePath.isEmpty()) {
+            System.out.println("No image path provided");
             return "";
+        }
+
+        if (sourceImagePath.startsWith("images/")) {
+            File checkFile = new File(sourceImagePath);
+            if (checkFile.exists()) {
+                System.out.println("Image already in project folder: " + sourceImagePath);
+                return sourceImagePath; // Langsung pakai, jangan copy
+            }
         }
 
         try {
             File sourceFile = new File(sourceImagePath);
             if (!sourceFile.exists()) {
+                System.out.println("Source file not found: " + sourceImagePath);
                 return "";
             }
 
-            // Buat folder images/rooms jika belum ada
-            File imagesDir = new File("images");
-            if (!imagesDir.exists()) {
-                imagesDir.mkdir();
-            }
+            System.out.println("Source file exists: " + sourceFile.getAbsolutePath());
+            System.out.println("Source file size: " + sourceFile.length() + " bytes");
 
+            // Buat folder images/rooms dengan mkdirs (recursive)
             File roomsDir = new File("images/rooms");
             if (!roomsDir.exists()) {
-                roomsDir.mkdir();
+                boolean created = roomsDir.mkdirs();
+                System.out.println("Created rooms directory: " + created + " at " + roomsDir.getAbsolutePath());
             }
 
-            // Generate nama file baru
-            String extension = sourceImagePath.substring(sourceImagePath.lastIndexOf("."));
-            String fileName = nomorKamar.replace(" - ", "_").replace(" ", "_") + extension;
-            File destFile = new File("images/rooms/" + fileName);
+            // Generate nama file dengan timestamp
+            String extension = "";
+            int lastDot = sourceImagePath.lastIndexOf(".");
+            if (lastDot > 0) {
+                extension = sourceImagePath.substring(lastDot);
+            }
+
+            String cleanNomor = nomorKamar.replace(" - ", "_").replace(" ", "_").replace("/", "_");
+            String timestamp = String.valueOf(System.currentTimeMillis());
+            String fileName = cleanNomor + "_" + timestamp + extension;
+            File destFile = new File(roomsDir, fileName);
+
+            System.out.println("Destination: " + destFile.getAbsolutePath());
 
             // Copy file
             BufferedImage image = ImageIO.read(sourceFile);
+            if (image == null) {
+                System.out.println("Failed to read image");
+                return "";
+            }
+
             String formatName = extension.substring(1).toLowerCase();
             if (formatName.equals("jpg")) formatName = "jpeg";
-            ImageIO.write(image, formatName, destFile);
 
-            System.out.println("Image saved to: " + destFile.getPath());
-            return destFile.getPath();
+            boolean saved = ImageIO.write(image, formatName, destFile);
+
+            if (saved && destFile.exists()) {
+                System.out.println("Image saved successfully!");
+                System.out.println("   File: " + destFile.getName());
+                System.out.println("   Path: " + destFile.getPath());
+                System.out.println("   Size: " + destFile.length() + " bytes");
+                return destFile.getPath();
+            } else {
+                System.out.println("Save failed");
+                return "";
+            }
+
         } catch (Exception e) {
+            System.err.println("Error saving image:");
             e.printStackTrace();
-            System.out.println("Failed to save image, using original path");
-            return sourceImagePath; // Fallback ke path asli jika gagal copy
+            return "";
         }
     }
 
@@ -1038,7 +1083,60 @@ public class KamarPanel extends JPanel {
         }
 
         // Save image to project folder
-        String savedImagePath = saveImageToProject(selectedImagePath, nomor);
+        String finalImagePath = "";
+
+        System.out.println("\n=== IMAGE SAVE PROCESS ===");
+        System.out.println("Edit Mode: " + (editId != null));
+        System.out.println("Selected Image Path: " + selectedImagePath);
+
+        if (editId != null) {
+            // MODE EDIT
+            Kamar oldKamar = kamarDAO.getById(editId);
+            String oldImagePath = (oldKamar != null) ? oldKamar.getImagePath() : "";
+
+            System.out.println("Old Image Path: " + oldImagePath);
+
+            if (selectedImagePath != null && !selectedImagePath.isEmpty()) {
+                if (selectedImagePath.equals(oldImagePath)) {
+                    finalImagePath = oldImagePath;
+                    System.out.println("✅ Using existing image (no change)");
+                } else {
+                    if (selectedImagePath.startsWith("images/rooms/")) {
+                        finalImagePath = selectedImagePath;
+                        System.out.println("✅ Image already in project folder");
+                    } else {
+                        finalImagePath = saveImageToProject(selectedImagePath, nomor);
+                        if (finalImagePath.isEmpty()) {
+                            finalImagePath = selectedImagePath;
+                            System.out.println("⚠️ Save failed, using original path");
+                        }
+                    }
+                }
+            } else {
+                finalImagePath = oldImagePath;
+                System.out.println("✅ Using old image");
+            }
+        } else {
+            // MODE TAMBAH BARU
+            if (selectedImagePath != null && !selectedImagePath.isEmpty()) {
+                if (selectedImagePath.startsWith("images/rooms/")) {
+                    finalImagePath = selectedImagePath;
+                    System.out.println("✅ Already in project");
+                } else {
+                    finalImagePath = saveImageToProject(selectedImagePath, nomor);
+                    if (finalImagePath.isEmpty()) {
+                        finalImagePath = selectedImagePath;
+                        System.out.println("⚠️ Save failed, using original");
+                    }
+                }
+            } else {
+                finalImagePath = "";
+                System.out.println("ℹ️ No image");
+            }
+        }
+
+        System.out.println("Final Image Path: " + finalImagePath);
+        System.out.println("=========================\n");
 
         Kamar kamar = new Kamar();
         kamar.setIdKamar(editId != null ? editId : kamarDAO.generateNewId());
@@ -1048,7 +1146,7 @@ public class KamarPanel extends JPanel {
         kamar.setUkuran(ukuran);
         kamar.setFasilitas(fasilitas);
         kamar.setStatus(editId != null ? kamarDAO.getById(editId).getStatus() : "Tersedia");
-        kamar.setImagePath(savedImagePath);
+        kamar.setImagePath(finalImagePath); // ← PAKAI finalImagePath, BUKAN savedImagePath
 
         boolean success = editId != null ? kamarDAO.update(kamar) : kamarDAO.create(kamar);
 
