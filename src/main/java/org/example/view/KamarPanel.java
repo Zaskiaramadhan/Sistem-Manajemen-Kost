@@ -39,10 +39,8 @@ public class KamarPanel extends JPanel {
         setBackground(ColorPalette.BG_OFF_WHITE);
         setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
-        // Header
         add(createHeaderPanel(), BorderLayout.NORTH);
 
-        // Card Container with ScrollPane
         cardContainer = new JPanel();
         cardContainer.setLayout(new GridLayout(0, 3, 20, 20));
         cardContainer.setBackground(ColorPalette.BG_OFF_WHITE);
@@ -57,16 +55,13 @@ public class KamarPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(ColorPalette.BG_OFF_WHITE);
 
-        // Title
         JLabel titleLabel = new JLabel("Kelola Kamar");
         titleLabel.setFont(FontManager.FONT_H1);
         titleLabel.setForeground(ColorPalette.NAVY_DARK);
 
-        // Control panel (search, sort, buttons)
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         controlPanel.setBackground(ColorPalette.BG_OFF_WHITE);
 
-        // Search
         JLabel searchLabel = new JLabel("Cari:");
         searchLabel.setFont(FontManager.FONT_BODY);
         searchLabel.setForeground(ColorPalette.GRAY_DARK);
@@ -79,7 +74,6 @@ public class KamarPanel extends JPanel {
         RButton searchButton = new RButton("Cari", RButton.ButtonType.SECONDARY);
         searchButton.addActionListener(e -> searchKamar());
 
-        // Sort
         JLabel sortLabel = new JLabel("Sort:");
         sortLabel.setFont(FontManager.FONT_BODY);
         sortLabel.setForeground(ColorPalette.GRAY_DARK);
@@ -96,7 +90,6 @@ public class KamarPanel extends JPanel {
         sortComboBox.setFont(FontManager.FONT_BODY);
         sortComboBox.addActionListener(e -> sortAndRefresh());
 
-        // Tambah Kamar button
         RButton addButton = new RButton("Tambah Kamar");
         addButton.addActionListener(e -> showAddDialog());
 
@@ -123,7 +116,6 @@ public class KamarPanel extends JPanel {
         ));
         card.setPreferredSize(new Dimension(300, 350));
 
-        // Image Panel
         JPanel imagePanel = new JPanel() {
             private BufferedImage image;
 
@@ -150,7 +142,6 @@ public class KamarPanel extends JPanel {
                 if (image != null) {
                     g2d.drawImage(image, 0, 0, getWidth(), getHeight(), null);
                 } else {
-                    // Placeholder
                     g2d.setColor(ColorPalette.GRAY_LIGHT);
                     g2d.fillRect(0, 0, getWidth(), getHeight());
                     g2d.setColor(ColorPalette.GRAY_DARK);
@@ -166,25 +157,21 @@ public class KamarPanel extends JPanel {
         imagePanel.setPreferredSize(new Dimension(300, 180));
         card.add(imagePanel, BorderLayout.NORTH);
 
-        // Info Panel
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
         infoPanel.setBackground(Color.WHITE);
         infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 5, 15));
 
-        // Room number
         JLabel roomLabel = new JLabel(kamar.getNomorKamar());
         roomLabel.setFont(FontManager.FONT_H3);
         roomLabel.setForeground(ColorPalette.NAVY_DARK);
         roomLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Type
         JLabel typeLabel = new JLabel(kamar.getTipe() + " bed");
         typeLabel.setFont(FontManager.FONT_BODY);
         typeLabel.setForeground(ColorPalette.GRAY_DARK);
         typeLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Price
         JLabel priceLabel = new JLabel(String.format("Rp %,.0f", kamar.getHarga()));
         priceLabel.setFont(FontManager.FONT_NUMBER_MED);
         priceLabel.setForeground(ColorPalette.NAVY_DARK);
@@ -198,11 +185,9 @@ public class KamarPanel extends JPanel {
 
         card.add(infoPanel, BorderLayout.CENTER);
 
-        // Button Panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
         buttonPanel.setBackground(Color.WHITE);
 
-        // Status button
         RButton statusButton;
         if ("Tersedia".equals(kamar.getStatus())) {
             statusButton = new RButton("Kosong", RButton.ButtonType.SUCCESS);
@@ -211,7 +196,6 @@ public class KamarPanel extends JPanel {
         }
         statusButton.setEnabled(false);
 
-        // Detail button
         RButton detailButton = new RButton("Detail", RButton.ButtonType.SECONDARY);
         detailButton.addActionListener(e -> showDetailDialog(kamar));
 
@@ -229,8 +213,6 @@ public class KamarPanel extends JPanel {
 
         for (Kamar kamar : kamarDAO.getAll()) {
             boolean matchesRoom = kamar.getNomorKamar().toLowerCase().contains(keyword);
-
-            // Search by penghuni name
             boolean matchesPenghuni = false;
             if ("Terisi".equals(kamar.getStatus())) {
                 String penghuni = penyewaDAO.getPenghuniByKamar(kamar.getIdKamar());
@@ -294,7 +276,6 @@ public class KamarPanel extends JPanel {
         mainPanel.setBackground(Color.WHITE);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Image
         JPanel imagePanel = new JPanel() {
             private BufferedImage image;
 
@@ -328,13 +309,11 @@ public class KamarPanel extends JPanel {
         imagePanel.setPreferredSize(new Dimension(610, 280));
         mainPanel.add(imagePanel, BorderLayout.NORTH);
 
-        // Info Panel
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
         infoPanel.setBackground(Color.WHITE);
         infoPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 10, 0));
 
-        // Header dengan nomor kamar dan lantai
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         headerPanel.setBackground(Color.WHITE);
         headerPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
@@ -347,14 +326,12 @@ public class KamarPanel extends JPanel {
         infoPanel.add(headerPanel);
         infoPanel.add(Box.createVerticalStrut(5));
 
-        // Separator line
         JSeparator separator = new JSeparator();
         separator.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
         separator.setForeground(ColorPalette.GRAY_LIGHT);
         infoPanel.add(separator);
         infoPanel.add(Box.createVerticalStrut(15));
 
-        // Info rows with icons
         infoPanel.add(createDetailRow("📐", "Tipe", kamar.getTipe() + " Room"));
         infoPanel.add(Box.createVerticalStrut(8));
 
@@ -364,7 +341,6 @@ public class KamarPanel extends JPanel {
         infoPanel.add(createDetailRow("📏", "Ukuran", "3 x 4 meter"));
         infoPanel.add(Box.createVerticalStrut(8));
 
-        // Status dengan warna
         JPanel statusRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         statusRow.setBackground(Color.WHITE);
         statusRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
@@ -393,7 +369,6 @@ public class KamarPanel extends JPanel {
         infoPanel.add(statusRow);
         infoPanel.add(Box.createVerticalStrut(15));
 
-        // Fasilitas section
         JPanel fasilitasHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         fasilitasHeader.setBackground(Color.WHITE);
         fasilitasHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
@@ -411,8 +386,16 @@ public class KamarPanel extends JPanel {
         infoPanel.add(fasilitasHeader);
         infoPanel.add(Box.createVerticalStrut(8));
 
-        // Parse fasilitas dan tampilkan per baris
-        String[] fasilitasArray = kamar.getFasilitas().split("\\+");
+        String fasilitasRaw = kamar.getFasilitas();
+        String[] fasilitasArray;
+
+// aman untuk data lama & baru
+        if (fasilitasRaw.contains("+")) {
+            fasilitasArray = fasilitasRaw.split("\\+"); // HARUS \\+
+        } else {
+            fasilitasArray = fasilitasRaw.split(",");
+        }
+
         for (String fas : fasilitasArray) {
             JPanel fasRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 30, 0));
             fasRow.setBackground(Color.WHITE);
@@ -435,7 +418,6 @@ public class KamarPanel extends JPanel {
 
         infoPanel.add(Box.createVerticalStrut(15));
 
-        // Penyewa section
         JPanel penyewaHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         penyewaHeader.setBackground(Color.WHITE);
         penyewaHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
@@ -478,7 +460,6 @@ public class KamarPanel extends JPanel {
 
         mainPanel.add(infoPanel, BorderLayout.CENTER);
 
-        // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setBackground(Color.WHITE);
 
@@ -562,138 +543,412 @@ public class KamarPanel extends JPanel {
 
     private String getFasilitasIcon(String fasilitas) {
         String lower = fasilitas.toLowerCase();
-        if (lower.contains("AC")) return "❄️";
+        if (lower.contains("ac")) return "❄️";
         if (lower.contains("wifi")) return "📶";
         if (lower.contains("kasur")) return "🛏️";
         if (lower.contains("lemari")) return "🚪";
         if (lower.contains("kamar mandi")) return "🚿";
-        if (lower.contains("meja Belajar")) return "📋";
+        if (lower.contains("meja belajar")) return "📋";
         if (lower.contains("kursi")) return "🪑";
+        if (lower.contains("sofa")) return "🛋️";
+        if (lower.contains("tv")) return "📺";
+        if (lower.contains("balkon")) return "🌿";
         return "✓";
     }
 
-    private JPanel createInfoRow(String label, String value) {
-        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 5));
-        row.setBackground(Color.WHITE);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-
-        JLabel labelComp = new JLabel(label);
-        labelComp.setFont(FontManager.FONT_BODY_LARGE);
-        labelComp.setForeground(ColorPalette.GRAY_DARK);
-        labelComp.setPreferredSize(new Dimension(150, 25));
-
-        JLabel colon = new JLabel(": ");
-        colon.setFont(FontManager.FONT_BODY_LARGE);
-
-        JLabel valueComp = new JLabel(value);
-        valueComp.setFont(FontManager.FONT_BODY_LARGE);
-        valueComp.setForeground(ColorPalette.NAVY_DARK);
-
-        row.add(labelComp);
-        row.add(colon);
-        row.add(valueComp);
-
-        return row;
-    }
-
     private void showAddDialog() {
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Tambah Kamar", true);
-        dialog.setSize(500, 550);
-        dialog.setLocationRelativeTo(this);
-
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        panel.setBackground(Color.WHITE);
-
-        JTextField nomorField = new JTextField();
-        String[] tipeOptions = {"Single", "Double", "VIP"};
-        JComboBox<String> tipeCombo = new JComboBox<>(tipeOptions);
-        JTextField hargaField = new JTextField();
-        JTextField fasilitasField = new JTextField();
-        JTextField imagePathField = new JTextField();
-        String[] statusOptions = {"Tersedia", "Terisi"};
-        JComboBox<String> statusCombo = new JComboBox<>(statusOptions);
-
-        panel.add(createFormField("Nomor Kamar:", nomorField));
-        panel.add(createFormField("Tipe:", tipeCombo));
-        panel.add(createFormField("Harga per Bulan:", hargaField));
-        panel.add(createFormField("Fasilitas:", fasilitasField));
-        panel.add(createFormField("Path Gambar:", imagePathField));
-        panel.add(createFormField("Status:", statusCombo));
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Color.WHITE);
-
-        RButton saveButton = new RButton("Simpan");
-        saveButton.addActionListener(e -> {
-            if (validateAndSaveKamar(nomorField, tipeCombo, hargaField, fasilitasField,
-                    imagePathField, statusCombo, null)) {
-                dialog.dispose();
-                refreshData();
-            }
-        });
-
-        RButton cancelButton = new RButton("Batal", RButton.ButtonType.SECONDARY);
-        cancelButton.addActionListener(e -> dialog.dispose());
-
-        buttonPanel.add(cancelButton);
-        buttonPanel.add(saveButton);
-        panel.add(buttonPanel);
-
-        dialog.add(panel);
-        dialog.setVisible(true);
+        showFormDialog(null);
     }
 
     private void showEditDialog(Kamar kamar) {
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Edit Kamar", true);
-        dialog.setSize(500, 550);
+        showFormDialog(kamar);
+    }
+
+    private void showFormDialog(Kamar kamar) {
+        boolean isEdit = (kamar != null);
+        String title = isEdit ? "Edit Kamar" : "Tambah Kamar Baru";
+
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), title, true);
+        dialog.setSize(600, 750);
         dialog.setLocationRelativeTo(this);
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        panel.setBackground(Color.WHITE);
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        JTextField nomorField = new JTextField(kamar.getNomorKamar());
-        String[] tipeOptions = {"Single", "Double", "VIP"};
+        JScrollPane scrollPane = new JScrollPane(mainPanel);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        // UPLOAD FOTO KAMAR
+        JLabel uploadLabel = new JLabel("UPLOAD FOTO KAMAR");
+        uploadLabel.setFont(FontManager.FONT_BODY.deriveFont(Font.BOLD));
+        uploadLabel.setForeground(ColorPalette.NAVY_DARK);
+        uploadLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        uploadLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        // 🔥 WRAPPER (WAJIB)
+        JPanel uploadLabelWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        uploadLabelWrapper.setBackground(Color.WHITE);
+        uploadLabelWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        uploadLabelWrapper.add(uploadLabel);
+        mainPanel.add(uploadLabelWrapper);
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        JTextField imagePathField = new JTextField(isEdit ? kamar.getImagePath() : "");
+        imagePathField.setFont(FontManager.FONT_BODY);
+        imagePathField.setBorder(AppConfig.createInputBorder());
+        imagePathField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        mainPanel.add(imagePathField);
+        mainPanel.add(Box.createVerticalStrut(20));
+
+        // INFORMASI KAMAR
+        JLabel infoLabel = new JLabel("INFORMASI KAMAR");
+        infoLabel.setFont(FontManager.FONT_BODY.deriveFont(Font.BOLD));
+        infoLabel.setForeground(ColorPalette.NAVY_DARK);
+        infoLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        infoLabel.setHorizontalAlignment(SwingConstants.LEFT);
+
+        JPanel infoLabelWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        infoLabelWrapper.setBackground(Color.WHITE);
+        infoLabelWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        infoLabelWrapper.add(infoLabel);
+
+        mainPanel.add(infoLabelWrapper);
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        // Nomor Kamar (Auto-generated, Read-only untuk Tambah)
+        JLabel nomorLabel = new JLabel("Nomor Kamar:");
+        nomorLabel.setFont(FontManager.FONT_BODY);
+        nomorLabel.setForeground(ColorPalette.GRAY_DARK);
+        nomorLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        nomorLabel.setHorizontalAlignment(SwingConstants.LEFT);
+
+        JTextField nomorField = new JTextField();
+        if (isEdit) {
+            nomorField.setText(kamar.getNomorKamar());
+        } else {
+            String nextId = String.format("K%02d", kamarDAO.getAll().size() + 1);
+            nomorField.setText(nextId + " - L__");
+            nomorField.setEditable(false);
+        }
+        mainPanel.add(nomorField);
+        mainPanel.add(Box.createVerticalStrut(10));
+        JPanel nomorLabelWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        nomorLabelWrapper.setBackground(Color.WHITE);
+        nomorLabelWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        nomorLabelWrapper.add(nomorLabel);
+        mainPanel.add(nomorLabelWrapper);
+
+        // Tipe Kamar
+        JLabel tipeLabel = new JLabel("Tipe Kamar:");
+        tipeLabel.setFont(FontManager.FONT_BODY);
+        tipeLabel.setForeground(ColorPalette.GRAY_DARK);
+        tipeLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tipeLabel.setHorizontalAlignment(SwingConstants.LEFT);
+
+        JPanel tipeLabelWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        tipeLabelWrapper.setBackground(Color.WHITE);
+        tipeLabelWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        tipeLabelWrapper.add(tipeLabel);
+        mainPanel.add(tipeLabelWrapper);
+
+        String[] tipeOptions = {"Single", "Double"};
         JComboBox<String> tipeCombo = new JComboBox<>(tipeOptions);
-        tipeCombo.setSelectedItem(kamar.getTipe());
-        JTextField hargaField = new JTextField(String.valueOf((int)kamar.getHarga()));
-        JTextField fasilitasField = new JTextField(kamar.getFasilitas());
-        JTextField imagePathField = new JTextField(kamar.getImagePath());
-        String[] statusOptions = {"Tersedia", "Terisi"};
-        JComboBox<String> statusCombo = new JComboBox<>(statusOptions);
-        statusCombo.setSelectedItem(kamar.getStatus());
+        if (isEdit) tipeCombo.setSelectedItem(kamar.getTipe());
+        tipeCombo.setFont(FontManager.FONT_BODY);
+        tipeCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        mainPanel.add(tipeCombo);
+        mainPanel.add(Box.createVerticalStrut(10));
 
-        panel.add(createFormField("Nomor Kamar:", nomorField));
-        panel.add(createFormField("Tipe:", tipeCombo));
-        panel.add(createFormField("Harga per Bulan:", hargaField));
-        panel.add(createFormField("Fasilitas:", fasilitasField));
-        panel.add(createFormField("Path Gambar:", imagePathField));
-        panel.add(createFormField("Status:", statusCombo));
+        // Harga dengan Periode
+        JLabel hargaLabel = new JLabel("Harga:");
+        hargaLabel.setFont(FontManager.FONT_BODY);
+        hargaLabel.setForeground(ColorPalette.GRAY_DARK);
+        hargaLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        hargaLabel.setHorizontalAlignment(SwingConstants.LEFT);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel hargaLabelWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        hargaLabelWrapper.setBackground(Color.WHITE);
+        hargaLabelWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        hargaLabelWrapper.add(hargaLabel);
+        mainPanel.add(hargaLabelWrapper);
+
+        JPanel hargaPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        hargaPanel.setBackground(Color.WHITE);
+        hargaPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+
+        JLabel rpLabel = new JLabel("Rp.");
+        rpLabel.setFont(FontManager.FONT_BODY);
+
+        JTextField hargaField = new JTextField(15);
+        if (isEdit) hargaField.setText(String.valueOf((int)kamar.getHarga()));
+        hargaField.setFont(FontManager.FONT_BODY);
+        hargaField.setBorder(AppConfig.createInputBorder());
+
+        JLabel perLabel = new JLabel("/");
+        perLabel.setFont(FontManager.FONT_BODY);
+
+        String[] periodeOptions = {"Hari", "Bulan", "Tahun"};
+        JComboBox<String> periodeCombo = new JComboBox<>(periodeOptions);
+        periodeCombo.setSelectedIndex(1); // Default Bulan
+        periodeCombo.setFont(FontManager.FONT_BODY);
+
+        hargaPanel.add(rpLabel);
+        hargaPanel.add(hargaField);
+        hargaPanel.add(perLabel);
+        hargaPanel.add(periodeCombo);
+        mainPanel.add(hargaPanel);
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        // Ukuran
+        JLabel ukuranLabel = new JLabel("Ukuran:");
+        ukuranLabel.setFont(FontManager.FONT_BODY);
+        ukuranLabel.setForeground(ColorPalette.GRAY_DARK);
+        ukuranLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        ukuranLabel.setHorizontalAlignment(SwingConstants.LEFT);
+
+        JPanel ukuranLabelWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        ukuranLabelWrapper.setBackground(Color.WHITE);
+        ukuranLabelWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        ukuranLabelWrapper.add(ukuranLabel);
+        mainPanel.add(ukuranLabelWrapper);
+
+        JPanel ukuranPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        ukuranPanel.setBackground(Color.WHITE);
+        ukuranPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+
+        JTextField panjangField = new JTextField(5);
+        panjangField.setFont(FontManager.FONT_BODY);
+        panjangField.setBorder(AppConfig.createInputBorder());
+
+        JLabel xLabel = new JLabel("x");
+        xLabel.setFont(FontManager.FONT_BODY);
+
+        JTextField lebarField = new JTextField(5);
+        lebarField.setFont(FontManager.FONT_BODY);
+        lebarField.setBorder(AppConfig.createInputBorder());
+
+        JLabel meterLabel = new JLabel("meter");
+        meterLabel.setFont(FontManager.FONT_BODY);
+
+        ukuranPanel.add(panjangField);
+        ukuranPanel.add(xLabel);
+        ukuranPanel.add(lebarField);
+        ukuranPanel.add(meterLabel);
+        mainPanel.add(ukuranPanel);
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        // Lantai
+        JLabel lantaiLabel = new JLabel("Lantai:");
+        lantaiLabel.setFont(FontManager.FONT_BODY);
+        lantaiLabel.setForeground(ColorPalette.GRAY_DARK);
+        lantaiLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lantaiLabel.setHorizontalAlignment(SwingConstants.LEFT);
+
+        JPanel lantaiLabelWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        lantaiLabelWrapper.setBackground(Color.WHITE);
+        lantaiLabelWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        lantaiLabelWrapper.add(lantaiLabel);
+        mainPanel.add(lantaiLabelWrapper);
+
+        String[] lantaiOptions = {"Lantai 1", "Lantai 2", "Lantai 3"};
+        JComboBox<String> lantaiCombo = new JComboBox<>(lantaiOptions);
+        lantaiCombo.setFont(FontManager.FONT_BODY);
+        lantaiCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        lantaiCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        mainPanel.add(lantaiCombo);
+        mainPanel.add(Box.createVerticalStrut(20));
+
+        // FASILITAS
+        JLabel fasilitasHeaderLabel = new JLabel("FASILITAS (centang jika tersedia):");
+        fasilitasHeaderLabel.setFont(FontManager.FONT_BODY.deriveFont(Font.BOLD));
+        fasilitasHeaderLabel.setForeground(ColorPalette.NAVY_DARK);
+        fasilitasHeaderLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fasilitasHeaderLabel.setHorizontalAlignment(SwingConstants.LEFT);
+
+        JPanel fasilitasLabelWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        fasilitasLabelWrapper.setBackground(Color.WHITE);
+        fasilitasLabelWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        fasilitasLabelWrapper.add(fasilitasHeaderLabel);
+
+        mainPanel.add(fasilitasLabelWrapper);
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        String[] fasilitasList = {
+                "Kasur", "Lemari", "Meja Belajar", "Sofa",
+                "Meja Rias", "Cermin", "Rak Barang", "Rak Buku",
+                "AC", "TV", "Water Heater", "Kamar Mandi Dalam",
+                "Jendela", "Balkon", "Tirai/Gorden", "WiFi"
+        };
+
+        JCheckBox[] fasilitasCheckBoxes = new JCheckBox[fasilitasList.length];
+
+        // Parse existing facilities if editing
+        List<String> existingFasilitas = new ArrayList<>();
+        if (isEdit && kamar.getFasilitas() != null) {
+            String[] parts = kamar.getFasilitas().split(",");
+            for (String part : parts) {
+                existingFasilitas.add(part.trim());
+            }
+        }
+
+        JPanel fasilitasPanel = new JPanel();
+        fasilitasPanel.setLayout(new GridLayout(0, 2, 10, 5));
+        fasilitasPanel.setBackground(Color.WHITE);
+        fasilitasPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 250));
+
+        for (int i = 0; i < fasilitasList.length; i++) {
+            fasilitasCheckBoxes[i] = new JCheckBox(fasilitasList[i]);
+            fasilitasCheckBoxes[i].setFont(FontManager.FONT_BODY);
+            fasilitasCheckBoxes[i].setBackground(Color.WHITE);
+
+            // Check if facility exists
+            if (existingFasilitas.contains(fasilitasList[i])) {
+                fasilitasCheckBoxes[i].setSelected(true);
+            }
+
+            fasilitasPanel.add(fasilitasCheckBoxes[i]);
+        }
+        mainPanel.add(fasilitasPanel);
+        mainPanel.add(Box.createVerticalStrut(20));
+
+        // CATATAN TAMBAHAN
+        JLabel catatanLabel = new JLabel("CATATAN TAMBAHAN:");
+        catatanLabel.setFont(FontManager.FONT_BODY.deriveFont(Font.BOLD));
+        catatanLabel.setForeground(ColorPalette.NAVY_DARK);
+        catatanLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        catatanLabel.setHorizontalAlignment(SwingConstants.LEFT);
+
+        JPanel catatanLabelWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        catatanLabelWrapper.setBackground(Color.WHITE);
+        catatanLabelWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        catatanLabelWrapper.add(catatanLabel);
+        mainPanel.add(catatanLabelWrapper);
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        JTextArea catatanArea = new JTextArea(4, 40);
+        catatanArea.setFont(FontManager.FONT_BODY);
+        catatanArea.setBorder(AppConfig.createInputBorder());
+        catatanArea.setLineWrap(true);
+        catatanArea.setWrapStyleWord(true);
+
+        JScrollPane catatanScroll = new JScrollPane(catatanArea);
+        catatanScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+        catatanScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
+        mainPanel.add(catatanScroll);
+        mainPanel.add(Box.createVerticalStrut(20));
+
+        // BUTTONS
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
 
-        RButton saveButton = new RButton("Simpan");
+        RButton cancelButton = new RButton("Batal", RButton.ButtonType.SECONDARY);
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        RButton saveButton = new RButton("Simpan Kamar");
         saveButton.addActionListener(e -> {
-            if (validateAndSaveKamar(nomorField, tipeCombo, hargaField, fasilitasField,
-                    imagePathField, statusCombo, kamar.getIdKamar())) {
+            if (validateAndSaveKamarNew(
+                    nomorField, tipeCombo, hargaField, periodeCombo,
+                    panjangField, lebarField, lantaiCombo,
+                    fasilitasCheckBoxes, fasilitasList,
+                    imagePathField, catatanArea,
+                    isEdit ? kamar.getIdKamar() : null
+            )) {
                 dialog.dispose();
                 refreshData();
             }
         });
 
-        RButton cancelButton = new RButton("Batal", RButton.ButtonType.SECONDARY);
-        cancelButton.addActionListener(e -> dialog.dispose());
-
         buttonPanel.add(cancelButton);
         buttonPanel.add(saveButton);
-        panel.add(buttonPanel);
+        mainPanel.add(buttonPanel);
 
-        dialog.add(panel);
+        dialog.add(scrollPane);
         dialog.setVisible(true);
+    }
+
+    private boolean validateAndSaveKamarNew(
+            JTextField nomorField, JComboBox<String> tipeCombo,
+            JTextField hargaField, JComboBox<String> periodeCombo,
+            JTextField panjangField, JTextField lebarField, JComboBox<String> lantaiCombo,
+            JCheckBox[] fasilitasCheckBoxes, String[] fasilitasList,
+            JTextField imagePathField, JTextArea catatanArea,
+            String editId) {
+
+        // Validasi Nomor Kamar
+        String nomor = nomorField.getText().trim();
+        if (nomor.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Nomor kamar harus diisi!",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        // Validasi Harga
+        String hargaStr = hargaField.getText().trim();
+        if (!ValidationUtil.isNotEmpty(hargaStr) || !ValidationUtil.isValidPositiveNumber(hargaStr)) {
+            JOptionPane.showMessageDialog(this, "Harga harus berupa angka positif!",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        // Validasi Ukuran
+        String panjangStr = panjangField.getText().trim();
+        String lebarStr = lebarField.getText().trim();
+        if (!ValidationUtil.isNotEmpty(panjangStr) || !ValidationUtil.isNotEmpty(lebarStr)) {
+            JOptionPane.showMessageDialog(this, "Ukuran kamar harus diisi!",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        // Build data
+        String tipe = (String) tipeCombo.getSelectedItem();
+        double harga = Double.parseDouble(hargaStr);
+        String periode = (String) periodeCombo.getSelectedItem();
+        String ukuran = panjangStr + " x " + lebarStr + " meter";
+        String lantai = (String) lantaiCombo.getSelectedItem();
+        String imagePath = imagePathField.getText().trim();
+
+        // Collect selected facilities
+        StringBuilder fasilitasBuilder = new StringBuilder();
+        for (int i = 0; i < fasilitasCheckBoxes.length; i++) {
+            if (fasilitasCheckBoxes[i].isSelected()) {
+                if (fasilitasBuilder.length() > 0) {
+                    fasilitasBuilder.append(",");
+                }
+                fasilitasBuilder.append(fasilitasList[i]);
+            }
+        }
+        String fasilitas = fasilitasBuilder.toString();
+
+        if (fasilitas.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Pilih minimal 1 fasilitas!",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        // Create or update Kamar object
+        Kamar kamar = new Kamar();
+        kamar.setIdKamar(editId != null ? editId : kamarDAO.generateNewId());
+        kamar.setNomorKamar(nomor);
+        kamar.setTipe(tipe);
+        kamar.setHarga(harga);
+        kamar.setFasilitas(fasilitas);
+        kamar.setStatus("Tersedia");
+        kamar.setImagePath(imagePath);
+
+        boolean success = editId != null ? kamarDAO.update(kamar) : kamarDAO.create(kamar);
+
+        if (success) {
+            JOptionPane.showMessageDialog(this,
+                    editId != null ? "Kamar berhasil diupdate!" : "Kamar berhasil ditambahkan!");
+            return true;
+        } else {
+            JOptionPane.showMessageDialog(this, "Gagal menyimpan kamar!",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
     }
 
     private void deleteKamar(Kamar kamar) {
@@ -717,79 +972,6 @@ public class KamarPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Gagal menghapus kamar!", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
-    }
-
-    private boolean validateAndSaveKamar(JTextField nomorField, JComboBox<String> tipeCombo,
-                                         JTextField hargaField, JTextField fasilitasField,
-                                         JTextField imagePathField, JComboBox<String> statusCombo,
-                                         String editId) {
-
-        String nomor = nomorField.getText().trim();
-        String tipe = (String) tipeCombo.getSelectedItem();
-        String hargaStr = hargaField.getText().trim();
-        String fasilitas = fasilitasField.getText().trim();
-        String imagePath = imagePathField.getText().trim();
-        String status = (String) statusCombo.getSelectedItem();
-
-        if (!ValidationUtil.isNotEmpty(nomor) || !ValidationUtil.isNotEmpty(hargaStr) ||
-                !ValidationUtil.isNotEmpty(fasilitas)) {
-            JOptionPane.showMessageDialog(this, "Nomor, harga, dan fasilitas harus diisi!",
-                    "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-
-        if (!ValidationUtil.isValidPositiveNumber(hargaStr)) {
-            JOptionPane.showMessageDialog(this, "Harga harus berupa angka positif!",
-                    "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-
-        double harga = Double.parseDouble(hargaStr);
-
-        Kamar kamar = new Kamar();
-        kamar.setIdKamar(editId != null ? editId : kamarDAO.generateNewId());
-        kamar.setNomorKamar(nomor);
-        kamar.setTipe(tipe);
-        kamar.setHarga(harga);
-        kamar.setFasilitas(fasilitas);
-        kamar.setStatus(status);
-        kamar.setImagePath(imagePath);
-
-        boolean success = editId != null ? kamarDAO.update(kamar) : kamarDAO.create(kamar);
-
-        if (success) {
-            JOptionPane.showMessageDialog(this,
-                    editId != null ? "Kamar berhasil diupdate!" : "Kamar berhasil ditambahkan!");
-            return true;
-        } else {
-            JOptionPane.showMessageDialog(this, "Gagal menyimpan kamar!",
-                    "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-    }
-
-    private JPanel createFormField(String label, JComponent field) {
-        JPanel panel = new JPanel(new BorderLayout(10, 5));
-        panel.setBackground(Color.WHITE);
-        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
-
-        JLabel jLabel = new JLabel(label);
-        jLabel.setFont(FontManager.FONT_BODY);
-        jLabel.setForeground(ColorPalette.GRAY_DARK);
-
-        if (field instanceof JTextField) {
-            ((JTextField) field).setFont(FontManager.FONT_BODY);
-            ((JTextField) field).setBorder(AppConfig.createInputBorder());
-            field.setPreferredSize(new Dimension(0, AppConfig.INPUT_HEIGHT));
-        } else if (field instanceof JComboBox) {
-            ((JComboBox<?>) field).setFont(FontManager.FONT_BODY);
-            field.setPreferredSize(new Dimension(0, AppConfig.INPUT_HEIGHT));
-        }
-
-        panel.add(jLabel, BorderLayout.NORTH);
-        panel.add(field, BorderLayout.CENTER);
-
-        return panel;
     }
 
     public void refreshData() {
