@@ -624,6 +624,12 @@ public class KamarPanel extends JPanel {
         nomorLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         nomorLabel.setHorizontalAlignment(SwingConstants.LEFT);
 
+        JPanel nomorLabelWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        nomorLabelWrapper.setBackground(Color.WHITE);
+        nomorLabelWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        nomorLabelWrapper.add(nomorLabel);
+        mainPanel.add(nomorLabelWrapper);
+
         JTextField nomorField = new JTextField();
         if (isEdit) {
             nomorField.setText(kamar.getNomorKamar());
@@ -634,11 +640,6 @@ public class KamarPanel extends JPanel {
         }
         mainPanel.add(nomorField);
         mainPanel.add(Box.createVerticalStrut(10));
-        JPanel nomorLabelWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        nomorLabelWrapper.setBackground(Color.WHITE);
-        nomorLabelWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
-        nomorLabelWrapper.add(nomorLabel);
-        mainPanel.add(nomorLabelWrapper);
 
         // Tipe Kamar
         JLabel tipeLabel = new JLabel("Tipe Kamar:");
@@ -756,7 +757,6 @@ public class KamarPanel extends JPanel {
         JComboBox<String> lantaiCombo = new JComboBox<>(lantaiOptions);
         lantaiCombo.setFont(FontManager.FONT_BODY);
         lantaiCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
-        lantaiCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
         mainPanel.add(lantaiCombo);
         mainPanel.add(Box.createVerticalStrut(20));
 
@@ -835,7 +835,6 @@ public class KamarPanel extends JPanel {
 
         JScrollPane catatanScroll = new JScrollPane(catatanArea);
         catatanScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
-        catatanScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
         mainPanel.add(catatanScroll);
         mainPanel.add(Box.createVerticalStrut(20));
 
