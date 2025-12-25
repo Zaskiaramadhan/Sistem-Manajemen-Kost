@@ -163,13 +163,7 @@ Layout Manager (BorderLayout, GridLayout, BoxLayout)
 
 🖥️ Teknologi & Library
 
-Java JDK 8+
-
 Java Swing
-
-AWT Graphics2D
-
-ImageIO
 
 Java Time API
 
