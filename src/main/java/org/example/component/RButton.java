@@ -9,9 +9,6 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-/**
- * Custom Button Component dengan styling Ruma
- */
 public class RButton extends JButton {
 
     public enum ButtonType {
