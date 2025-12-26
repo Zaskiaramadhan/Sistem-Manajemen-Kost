@@ -25,7 +25,7 @@ public class LoginView extends JFrame {
 
     private void initComponents() {
         setTitle("Login - " + AppConfig.APP_NAME);
-        setSize(500, 650);
+        setSize(500, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -53,7 +53,7 @@ public class LoginView extends JFrame {
                 BorderFactory.createLineBorder(ColorPalette.BG_CREAM, 1),
                 BorderFactory.createEmptyBorder(0, 0, 30, 0)
         ));
-        card.setPreferredSize(new Dimension(420, 580));
+        card.setPreferredSize(new Dimension(420, 630));
 
         // ========== FOTO HEADER WITH OVERLAY TEXT ==========
         JPanel imagePanel = createImageHeaderPanel();
@@ -144,10 +144,47 @@ public class LoginView extends JFrame {
         loginButton.addActionListener(this::handleLogin);
 
         formPanel.add(loginButton);
+        formPanel.add(Box.createVerticalStrut(20));
+
+        JPanel copyrightPanel = createCopyrightPanel();
+        formPanel.add(copyrightPanel);
 
         card.add(formPanel);
 
         return card;
+    }
+
+    private JPanel createCopyrightPanel() {
+        JPanel copyrightPanel = new JPanel();
+        copyrightPanel.setLayout(new BoxLayout(copyrightPanel, BoxLayout.Y_AXIS));
+        copyrightPanel.setBackground(Color.WHITE);
+        copyrightPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        copyrightPanel.setMaximumSize(new Dimension(340, 60));
+
+        // Divider line
+        JSeparator separator = new JSeparator();
+        separator.setForeground(ColorPalette.GRAY_LIGHT);
+        separator.setMaximumSize(new Dimension(340, 1));
+        copyrightPanel.add(separator);
+        copyrightPanel.add(Box.createVerticalStrut(12));
+
+        // Copyright symbol and text
+        JLabel copyrightLabel = new JLabel("© 2025 RUMA by UAP Pemrograman Lanjut");
+        copyrightLabel.setFont(new Font(FontManager.FONT_PRIMARY, Font.PLAIN, 11));
+        copyrightLabel.setForeground(new Color(120, 120, 120));
+        copyrightLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Developer credit
+        JLabel developerLabel = new JLabel("Developed with by RUMA Team");
+        developerLabel.setFont(new Font(FontManager.FONT_PRIMARY, Font.PLAIN, 10));
+        developerLabel.setForeground(new Color(150, 150, 150));
+        developerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        copyrightPanel.add(copyrightLabel);
+        copyrightPanel.add(Box.createVerticalStrut(4));
+        copyrightPanel.add(developerLabel);
+
+        return copyrightPanel;
     }
 
     private JPanel createImageHeaderPanel() {
@@ -170,13 +207,18 @@ public class LoginView extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
                 if (backgroundImage != null) {
                     // Draw image (scaled to fit)
                     g2d.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), null);
 
-                    // Draw dark overlay untuk membuat teks lebih terlihat
-                    g2d.setColor(new Color(0, 0, 0, 100)); // Semi-transparent black
+                    // Draw dark overlay dengan gradient untuk efek lebih modern
+                    GradientPaint overlayGradient = new GradientPaint(
+                            0, 0, new Color(0, 0, 0, 120),
+                            0, getHeight(), new Color(0, 0, 0, 80)
+                    );
+                    g2d.setPaint(overlayGradient);
                     g2d.fillRect(0, 0, getWidth(), getHeight());
                 } else {
                     // Fallback: gradient background jika gambar tidak ada
@@ -188,11 +230,10 @@ public class LoginView extends JFrame {
                     g2d.fillRect(0, 0, getWidth(), getHeight());
                 }
 
-                // Draw "RUMA" text di tengah
-                g2d.setColor(Color.WHITE);
-                g2d.setFont(new Font(FontManager.FONT_PRIMARY, Font.BOLD, 52));
-
+                // Draw "RUMA" text di tengah dengan efek lebih menarik
                 String text = "RUMA";
+                g2d.setFont(new Font(FontManager.FONT_PRIMARY, Font.BOLD, 56));
+
                 FontMetrics fm = g2d.getFontMetrics();
                 int textWidth = fm.stringWidth(text);
                 int textHeight = fm.getHeight();
@@ -200,13 +241,20 @@ public class LoginView extends JFrame {
                 int x = (getWidth() - textWidth) / 2;
                 int y = (getHeight() - textHeight) / 2 + fm.getAscent();
 
-                // Draw shadow untuk efek depth
-                g2d.setColor(new Color(0, 0, 0, 120));
-                g2d.drawString(text, x + 2, y + 2);
+                // Draw multiple shadow layers untuk depth effect
+                for (int i = 4; i > 0; i--) {
+                    g2d.setColor(new Color(0, 0, 0, 30 * i));
+                    g2d.drawString(text, x + i, y + i);
+                }
 
-                // Draw actual text
-                g2d.setColor(Color.WHITE);
+                // Draw actual text dengan slight glow effect
+                g2d.setColor(new Color(255, 255, 255, 250));
                 g2d.drawString(text, x, y);
+
+                // Optional: Add subtle border to text
+                g2d.setColor(new Color(255, 255, 255, 100));
+                g2d.setStroke(new BasicStroke(1.5f));
+                g2d.drawString(text, x - 1, y - 1);
             }
         };
 
