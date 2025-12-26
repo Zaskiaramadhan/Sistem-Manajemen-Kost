@@ -6,6 +6,7 @@ import org.example.config.AppConfig;
 import org.example.dao.KamarDAO;
 import org.example.dao.PenyewaDAO;
 import org.example.dao.PembayaranDAO;
+import org.example.model.Kamar;
 import org.example.model.Pembayaran;
 import org.example.model.Penyewa;
 import org.example.util.DateUtil;
@@ -134,9 +135,6 @@ public class DashboardPanel extends JPanel {
                     File imgFile = new File(imagePath);
                     if (imgFile.exists()) {
                         bgImage = ImageIO.read(imgFile);
-                        System.out.println("✓ Dashboard image loaded: " + imagePath);
-                    } else {
-                        System.out.println("✗ Dashboard image not found: " + imagePath);
                     }
                 } catch (Exception e) {
                     System.out.println("✗ Error loading dashboard image: " + imagePath);
@@ -188,7 +186,7 @@ public class DashboardPanel extends JPanel {
         valueLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Save reference
-        switch(id) {
+        switch (id) {
             case "total":
                 totalKamarValueLabel = valueLabel;
                 break;
@@ -301,13 +299,16 @@ public class DashboardPanel extends JPanel {
             boolean sudahBayar = pembayaranDAO.isPaid(penyewa.getIdPenyewa(), bulanIni);
 
             if (!sudahBayar) {
-                String nomorKamar = kamarDAO.getById(penyewa.getIdKamar()).getNomorKamar();
+                Kamar kamar = kamarDAO.getById(penyewa.getIdKamar());
+                if (kamar != null) {
+                    String nomorKamar = kamar.getNomorKamar();
 
-                if (today.getDayOfMonth() > 5) {
-                    int hariTerlambat = today.getDayOfMonth() - 5;
-                    notifications.add("Kamar " + nomorKamar + " (" + penyewa.getNama() + ") - Pembayaran terlambat " + hariTerlambat + " hari");
-                } else if (today.getDayOfMonth() >= 3) {
-                    notifications.add("Kamar " + nomorKamar + " (" + penyewa.getNama() + ") - Pembayaran jatuh tempo dalam " + (5 - today.getDayOfMonth()) + " hari");
+                    if (today.getDayOfMonth() > 5) {
+                        int hariTerlambat = today.getDayOfMonth() - 5;
+                        notifications.add("Kamar " + nomorKamar + " (" + penyewa.getNama() + ") - Pembayaran terlambat " + hariTerlambat + " hari");
+                    } else if (today.getDayOfMonth() >= 3) {
+                        notifications.add("Kamar " + nomorKamar + " (" + penyewa.getNama() + ") - Pembayaran jatuh tempo dalam " + (5 - today.getDayOfMonth()) + " hari");
+                    }
                 }
             }
         }
@@ -361,29 +362,76 @@ public class DashboardPanel extends JPanel {
     }
 
     public void refreshData() {
-        // ✅ PERBAIKAN: Force refresh dari file
+        System.out.println("\n === DASHBOARD REFRESH START ===");
+
+        // Force reload dari file
         KamarDAO kamarDAO = KamarDAO.getInstance();
         PenyewaDAO penyewaDAO = PenyewaDAO.getInstance();
         PembayaranDAO pembayaranDAO = PembayaranDAO.getInstance();
 
-        // Reload data dari file
         kamarDAO.refresh();
         penyewaDAO.refresh();
+        pembayaranDAO.refresh();
 
-        // Update statistik kamar
-        int totalKamar = kamarDAO.getTotalRooms();
-        int terisi = kamarDAO.getOccupiedRooms();
-        int kosong = kamarDAO.getAvailableRoomsCount();
+        // LOGIKA BENAR: Hitung berdasarkan data AKTUAL
+        List<Kamar> semuaKamar = kamarDAO.getAll();
+        List<Penyewa> penyewaAktif = penyewaDAO.getActivePenyewa();
 
-        System.out.println("📊 Dashboard Stats: Total=" + totalKamar + ", Terisi=" + terisi + ", Kosong=" + kosong);
+        // Total kamar = semua kamar yang ada
+        int totalKamar = semuaKamar.size();
 
-        totalKamarValueLabel.setText(String.valueOf(totalKamar));
-        terisiValueLabel.setText(String.valueOf(terisi));
-        kosongValueLabel.setText(String.valueOf(kosong));
+        // Kamar terisi = jumlah penyewa yang statusnya "Aktif"
+        int terisi = penyewaAktif.size();
+
+        // Kamar tersedia = total kamar - kamar terisi
+        int kosong = totalKamar - terisi;
+
+        System.out.println("   Stats Kamar (FIXED LOGIC):");
+        System.out.println("   Total Kamar      : " + totalKamar);
+        System.out.println("   Kamar Terisi     : " + terisi + " (penyewa aktif)");
+        System.out.println("   Kamar Tersedia   : " + kosong);
+        System.out.println("   Validasi      : " + totalKamar + " = " + terisi + " + " + kosong);
+
+        // DETEKSI INKONSISTENSI - Auto-sync status kamar
+        System.out.println("\nChecking for inconsistencies...");
+        int fixed = 0;
+
+        for (Kamar kamar : semuaKamar) {
+            Penyewa penghuni = penyewaDAO.getByKamar(kamar.getIdKamar());
+            boolean adaPenghuni = (penghuni != null);
+            String statusSeharusnya = adaPenghuni ? "Terisi" : "Tersedia";
+
+            if (!kamar.getStatus().equals(statusSeharusnya)) {
+                System.out.println("      Inkonsistensi detected: Kamar " + kamar.getNomorKamar());
+                System.out.println("      Status saat ini: " + kamar.getStatus());
+                System.out.println("      Status seharusnya: " + statusSeharusnya);
+                System.out.println("      Penghuni: " + (adaPenghuni ? penghuni.getNama() : "Kosong"));
+
+                // Auto-fix
+                kamar.setStatus(statusSeharusnya);
+                kamarDAO.update(kamar);
+                fixed++;
+
+                System.out.println("        Status diperbaiki otomatis!");
+            }
+        }
+
+        if (fixed > 0) {
+            System.out.println("✅ " + fixed + " kamar berhasil di-sync!");
+            // Refresh lagi setelah fix
+            kamarDAO.refresh();
+        } else {
+            System.out.println("Tidak ada inkonsistensi. Data sudah sinkron!");
+        }
+
+        // Update UI
+        if (totalKamarValueLabel != null) totalKamarValueLabel.setText(String.valueOf(totalKamar));
+        if (terisiValueLabel != null) terisiValueLabel.setText(String.valueOf(terisi));
+        if (kosongValueLabel != null) kosongValueLabel.setText(String.valueOf(kosong));
 
         // Update statistik pembayaran
         String bulanIni = DateUtil.getCurrentMonthYear();
-        int totalPenyewa = penyewaDAO.getTotalActivePenyewa();
+        int totalPenyewa = penyewaAktif.size();
         List<Pembayaran> pembayaranList = pembayaranDAO.getPaidThisMonth(bulanIni);
         int sudahBayar = pembayaranList.size();
         int belumBayar = totalPenyewa - sudahBayar;
@@ -391,10 +439,19 @@ public class DashboardPanel extends JPanel {
 
         double persenSudahBayar = totalPenyewa > 0 ? (sudahBayar * 100.0 / totalPenyewa) : 0;
 
-        sudahBayarLabel.setText(String.format("%d orang (%.0f%%)", sudahBayar, persenSudahBayar));
-        belumBayarLabel.setText(belumBayar + " orang");
-        totalPemasukanLabel.setText(String.format("Rp %,.0f", totalPemasukan));
+        System.out.println("\n  Stats Pembayaran:");
+        System.out.println("   Sudah Bayar : " + sudahBayar + "/" + totalPenyewa);
+        System.out.println("   Belum Bayar : " + belumBayar);
+        System.out.println("   Pemasukan   : Rp " + String.format("%,.0f", totalPemasukan));
 
+        if (sudahBayarLabel != null)
+            sudahBayarLabel.setText(String.format("%d orang (%.0f%%)", sudahBayar, persenSudahBayar));
+        if (belumBayarLabel != null) belumBayarLabel.setText(belumBayar + " orang");
+        if (totalPemasukanLabel != null) totalPemasukanLabel.setText(String.format("Rp %,.0f", totalPemasukan));
+
+        // Update notifikasi
         updateNotifications();
+
+        System.out.println("\n === DASHBOARD REFRESH COMPLETE ===\n");
     }
 }

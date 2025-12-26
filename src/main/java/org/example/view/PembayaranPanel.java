@@ -18,9 +18,6 @@ import java.awt.*;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Pembayaran Panel - Input dan Kelola Pembayaran
- */
 public class PembayaranPanel extends JPanel {
 
     private JTable table;
@@ -43,13 +40,17 @@ public class PembayaranPanel extends JPanel {
 
         add(createHeaderPanel(), BorderLayout.NORTH);
 
-        JPanel centerPanel = new JPanel(new BorderLayout(0, 20));
-        centerPanel.setBackground(ColorPalette.BG_OFF_WHITE);
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        splitPane.setBackground(ColorPalette.BG_OFF_WHITE);
+        splitPane.setBorder(null);
+        splitPane.setDividerLocation(320); // Input panel height
+        splitPane.setDividerSize(0);
+        splitPane.setResizeWeight(0.0); // Input panel fixed, table flexible
 
-        centerPanel.add(createInputPanel(), BorderLayout.NORTH);
-        centerPanel.add(createTablePanel(), BorderLayout.CENTER);
+        splitPane.setTopComponent(createInputPanel());
+        splitPane.setBottomComponent(createTablePanel());
 
-        add(centerPanel, BorderLayout.CENTER);
+        add(splitPane, BorderLayout.CENTER);
     }
 
     private JPanel createHeaderPanel() {
@@ -71,6 +72,8 @@ public class PembayaranPanel extends JPanel {
         panel.setBorder(AppConfig.createCardBorder());
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
+        panel.setPreferredSize(new Dimension(0, 300));
+
         // Title label - CENTERED
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         titlePanel.setBackground(Color.WHITE);
@@ -83,12 +86,12 @@ public class PembayaranPanel extends JPanel {
         titlePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
 
         panel.add(titlePanel);
-        panel.add(Box.createVerticalStrut(30));
+        panel.add(Box.createVerticalStrut(20));
 
         // Form grid - Row 1
         JPanel formGrid1 = new JPanel(new GridLayout(1, 2, 15, 15));
         formGrid1.setBackground(Color.WHITE);
-        formGrid1.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+        formGrid1.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
 
         // Penyewa combo
         JComboBox<String> penyewaCombo = new JComboBox<>();
@@ -118,7 +121,7 @@ public class PembayaranPanel extends JPanel {
         // Form grid - Row 2
         JPanel formGrid2 = new JPanel(new GridLayout(1, 3, 15, 15));
         formGrid2.setBackground(Color.WHITE);
-        formGrid2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+        formGrid2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
 
         // Tanggal bayar
         JTextField tanggalField = new JTextField(DateUtil.formatDate(LocalDate.now()));
@@ -144,7 +147,7 @@ public class PembayaranPanel extends JPanel {
         // Form grid - Row 3: Catatan
         JPanel formGrid3 = new JPanel(new BorderLayout(5, 5));
         formGrid3.setBackground(Color.WHITE);
-        formGrid3.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+        formGrid3.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
 
         JLabel catatanLabel = new JLabel("Catatan:");
         catatanLabel.setFont(FontManager.FONT_BODY_SMALL);
@@ -159,13 +162,13 @@ public class PembayaranPanel extends JPanel {
         formGrid3.add(catatanField, BorderLayout.CENTER);
 
         panel.add(formGrid3);
-        panel.add(Box.createVerticalStrut(15));
+        panel.add(Box.createVerticalStrut(10));
 
         // Save button
-        RButton saveButton = new RButton("💾 Simpan Pembayaran");
+        RButton saveButton = new RButton("Simpan Pembayaran");
         saveButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
         saveButton.addActionListener(e -> {
-            if (savePembayaran(penyewaCombo, bulanTahunCombo, tanggalField, jumlahField, metodeCombo)) {
+            if (savePembayaran(penyewaCombo, bulanTahunCombo, tanggalField, jumlahField, metodeCombo, catatanField)) {
                 // Reset form
                 jumlahField.setText("");
                 catatanField.setText("");
@@ -175,6 +178,7 @@ public class PembayaranPanel extends JPanel {
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
         buttonPanel.add(saveButton);
 
         panel.add(buttonPanel);
@@ -201,7 +205,7 @@ public class PembayaranPanel extends JPanel {
         filterBulanCombo.addItem(DateUtil.getCurrentMonthYear());
         filterBulanCombo.addActionListener(e -> filterData());
 
-        RButton refreshButton = new RButton("🔄 Refresh", RButton.ButtonType.SECONDARY);
+        RButton refreshButton = new RButton("Refresh", RButton.ButtonType.SECONDARY);
         refreshButton.addActionListener(e -> refreshData());
 
         filterPanel.add(filterLabel);
@@ -226,7 +230,7 @@ public class PembayaranPanel extends JPanel {
         table.setSelectionForeground(ColorPalette.NAVY_DARK);
         table.setShowGrid(true);
         table.setGridColor(ColorPalette.GRAY_LIGHT);
-        table.setIntercellSpacing(new Dimension(1, 1));
+        table.setIntercellSpacing(new Dimension(10, 10));
 
         // Header styling with custom renderer
         DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer() {
@@ -313,15 +317,16 @@ public class PembayaranPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createLineBorder(ColorPalette.GRAY_LIGHT, 1));
         scrollPane.getViewport().setBackground(Color.WHITE);
-        scrollPane.setPreferredSize(new Dimension(0, 400));
-        scrollPane.setMinimumSize(new Dimension(0, 300));
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        // Hapus setPreferredSize dan setMinimumSize agar table flexible
+
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // Action panel
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
         actionPanel.setBackground(Color.WHITE);
 
-        RButton deleteButton = new RButton("🗑️ Hapus", RButton.ButtonType.DANGER);
+        RButton deleteButton = new RButton("Hapus", RButton.ButtonType.DANGER);
         deleteButton.addActionListener(e -> deletePembayaran());
 
         actionPanel.add(deleteButton);
@@ -331,7 +336,8 @@ public class PembayaranPanel extends JPanel {
     }
 
     private boolean savePembayaran(JComboBox<String> penyewaCombo, JComboBox<String> bulanTahunCombo,
-                                   JTextField tanggalField, JTextField jumlahField, JComboBox<String> metodeCombo) {
+                                   JTextField tanggalField, JTextField jumlahField, JComboBox<String> metodeCombo,
+                                   JTextField catatanField) {
 
         if (penyewaCombo.getSelectedItem() == null) {
             JOptionPane.showMessageDialog(this, "Tidak ada penyewa aktif!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -418,9 +424,9 @@ public class PembayaranPanel extends JPanel {
         for (Pembayaran p : dataList) {
             Penyewa penyewa = penyewaDAO.getById(p.getIdPenyewa());
 
-            // ⚠️ NULL CHECK: Skip jika penyewa tidak ditemukan
+            // Skip jika penyewa tidak ditemukan
             if (penyewa == null) {
-                System.err.println("⚠️ WARNING: Penyewa dengan ID " + p.getIdPenyewa() + " tidak ditemukan");
+                System.err.println("WARNING: Penyewa dengan ID " + p.getIdPenyewa() + " tidak ditemukan");
                 continue;
             }
 

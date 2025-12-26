@@ -1,5 +1,8 @@
 package org.example.view;
 
+import org.example.model.Kamar;
+import org.example.model.Pembayaran;
+import org.example.model.Penyewa;
 import org.example.util.DateUtil;
 import org.example.util.FileHandler;
 
@@ -7,46 +10,40 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
-/**
- * Panel Laporan & Statistik
- * Menampilkan ringkasan bulanan dan detail pembayaran
- */
 public class LaporanPanel extends JPanel {
 
-    // Components
     private JComboBox<String> filterBulanCombo;
-    private JLabel totalPemasukanLabel;
-    private JLabel sudahBayarLabel;
-    private JLabel belumBayarLabel;
-    private JLabel terlambatLabel;
-    private JLabel kamarTerisiLabel;
-    private JLabel kamarKosongLabel;
+    private JPanel totalPemasukanLabel;
+    private JPanel sudahBayarLabel;
+    private JPanel belumBayarLabel;
+    private JPanel terlambatLabel;
+    private JPanel kamarTerisiLabel;
+    private JPanel tingkatOkupasiLabel;
     private JTable detailTable;
     private DefaultTableModel tableModel;
     private JPanel grafikPanel;
+    private JLabel trendLabel;
+    private JLabel proyeksiLabel;
 
-    // Data
     private List<Kamar> kamarList;
     private List<Penyewa> penyewaList;
     private List<Pembayaran> pembayaranList;
-
-    // Filter
     private YearMonth selectedMonth;
 
+    private static final Locale LOCALE_ID = new Locale("id", "ID");
+
     public LaporanPanel() {
-        setLayout(new BorderLayout(10, 10));
+        setLayout(new BorderLayout(15, 15));
         setBorder(new EmptyBorder(20, 20, 20, 20));
         setBackground(Color.WHITE);
-
         initializeData();
         initComponents();
         loadData();
@@ -60,30 +57,16 @@ public class LaporanPanel extends JPanel {
     }
 
     private void initComponents() {
-        // Header Panel
-        JPanel headerPanel = createHeaderPanel();
-        add(headerPanel, BorderLayout.NORTH);
-
-        // Content Panel
-        JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
+        add(createHeaderPanel(), BorderLayout.NORTH);
+        JPanel contentPanel = new JPanel(new BorderLayout(15, 15));
         contentPanel.setBackground(Color.WHITE);
+        contentPanel.add(createRingkasanPanel(), BorderLayout.NORTH);
 
-        // Ringkasan Panel
-        JPanel ringkasanPanel = createRingkasanPanel();
-        contentPanel.add(ringkasanPanel, BorderLayout.NORTH);
-
-        // Detail & Grafik Panel
-        JPanel bottomPanel = new JPanel(new BorderLayout(10, 10));
+        JPanel bottomPanel = new JPanel(new GridLayout(1, 2, 15, 0));
         bottomPanel.setBackground(Color.WHITE);
-
-        JPanel detailPanel = createDetailPanel();
-        bottomPanel.add(detailPanel, BorderLayout.CENTER);
-
-        JPanel grafikWrapperPanel = createGrafikPanel();
-        bottomPanel.add(grafikWrapperPanel, BorderLayout.SOUTH);
-
+        bottomPanel.add(createDetailPanel());
+        bottomPanel.add(createGrafikPanel());
         contentPanel.add(bottomPanel, BorderLayout.CENTER);
-
         add(contentPanel, BorderLayout.CENTER);
     }
 
@@ -92,51 +75,46 @@ public class LaporanPanel extends JPanel {
         panel.setBackground(Color.WHITE);
         panel.setBorder(new EmptyBorder(0, 0, 15, 0));
 
-        JLabel titleLabel = new JLabel("📊 LAPORAN & STATISTIK");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(new Color(52, 73, 94));
+        JLabel titleLabel = new JLabel("LAPORAN & STATISTIK");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titleLabel.setForeground(new Color(44, 62, 80));
 
-        // Filter Panel
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         filterPanel.setBackground(Color.WHITE);
 
-        JLabel filterLabel = new JLabel("Filter: ▼");
-        filterLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        JLabel periodeLbl = new JLabel("Periode:");
+        periodeLbl.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        filterPanel.add(periodeLbl);
 
-        // Generate bulan options (6 bulan terakhir)
         String[] bulanOptions = generateBulanOptions();
         filterBulanCombo = new JComboBox<>(bulanOptions);
         filterBulanCombo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        filterBulanCombo.setPreferredSize(new Dimension(150, 30));
+        filterBulanCombo.setPreferredSize(new Dimension(160, 35));
         filterBulanCombo.addActionListener(e -> onFilterChanged());
-
-        JButton tampilkanBtn = new JButton("TAMPILKAN");
-        tampilkanBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        tampilkanBtn.setBackground(new Color(52, 152, 219));
-        tampilkanBtn.setForeground(Color.WHITE);
-        tampilkanBtn.setFocusPainted(false);
-        tampilkanBtn.setBorderPainted(false);
-        tampilkanBtn.setPreferredSize(new Dimension(120, 30));
-        tampilkanBtn.addActionListener(e -> loadData());
-
-        JButton exportBtn = new JButton("EXPORT PDF");
-        exportBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        exportBtn.setBackground(new Color(231, 76, 60));
-        exportBtn.setForeground(Color.WHITE);
-        exportBtn.setFocusPainted(false);
-        exportBtn.setBorderPainted(false);
-        exportBtn.setPreferredSize(new Dimension(120, 30));
-        exportBtn.addActionListener(e -> exportToPDF());
-
-        filterPanel.add(filterLabel);
         filterPanel.add(filterBulanCombo);
+
+        JButton tampilkanBtn = createButton("TAMPILKAN", new Color(52, 152, 219));
+        tampilkanBtn.addActionListener(e -> loadData());
         filterPanel.add(tampilkanBtn);
-        filterPanel.add(exportBtn);
+
+        JButton refreshBtn = createButton("REFRESH", new Color(46, 204, 113));
+        refreshBtn.addActionListener(e -> refresh());
+        filterPanel.add(refreshBtn);
 
         panel.add(titleLabel, BorderLayout.WEST);
         panel.add(filterPanel, BorderLayout.EAST);
-
         return panel;
+    }
+
+    private JButton createButton(String text, Color bg) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btn.setBackground(bg);
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setPreferredSize(new Dimension(120, 35));
+        return btn;
     }
 
     private JPanel createRingkasanPanel() {
@@ -145,95 +123,63 @@ public class LaporanPanel extends JPanel {
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(189, 195, 199), 2),
-                new EmptyBorder(15, 15, 15, 15)
-        ));
+                new EmptyBorder(20, 20, 20, 20)));
 
-        // Title
-        String bulanTahun = selectedMonth.format(
-                DateTimeFormatter.ofPattern("MMMM yyyy", new java.util.Locale("id", "ID"))
-        );
-        JLabel titleLabel = new JLabel("📈 RINGKASAN BULAN " + bulanTahun.toUpperCase());
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        String bulanTahun = selectedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", LOCALE_ID));
+        JLabel titleLabel = new JLabel("RINGKASAN BULAN " + bulanTahun.toUpperCase());
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(titleLabel);
-        panel.add(Box.createRigidArea(new Dimension(0, 15)));
+        panel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        // Stats Grid
-        JPanel statsPanel = new JPanel(new GridLayout(2, 3, 20, 10));
+        JPanel statsPanel = new JPanel(new GridLayout(3, 2, 20, 15));
         statsPanel.setBackground(Color.WHITE);
         statsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Total Pemasukan
-        totalPemasukanLabel = createStatLabel("💰", "Total Pemasukan", "Rp 12.000.000",
-                new Color(39, 174, 96), new Color(46, 204, 113));
-
-        // Sudah Bayar
-        sudahBayarLabel = createStatLabel("✅", "Sudah Bayar", "15 penyewa (100%)",
-                new Color(39, 174, 96), new Color(46, 204, 113));
-
-        // Belum Bayar
-        belumBayarLabel = createStatLabel("🏆", "Belum Bayar", "0 penyewa",
-                new Color(241, 196, 15), new Color(243, 156, 18));
-
-        // Terlambat
-        terlambatLabel = createStatLabel("⚠", "Terlambat", "0 penyewa",
-                new Color(231, 76, 60), new Color(192, 57, 43));
-
-        // Kamar Terisi
-        kamarTerisiLabel = createStatLabel("🏠", "Kamar Terisi", "15 / 20 (75%)",
-                new Color(52, 152, 219), new Color(41, 128, 185));
-
-        // Kamar Kosong
-        kamarKosongLabel = createStatLabel("🔓", "Kamar Kosong", "5 kamar",
-                new Color(149, 165, 166), new Color(127, 140, 141));
+        totalPemasukanLabel = createStatCard("💰", "Total Pemasukan", "Rp 0", new Color(39, 174, 96));
+        sudahBayarLabel = createStatCard("✅", "Sudah Bayar", "0", new Color(52, 152, 219));
+        belumBayarLabel = createStatCard("⏳", "Belum Bayar", "0", new Color(241, 196, 15));
+        terlambatLabel = createStatCard("⚠️", "Terlambat", "0", new Color(231, 76, 60));
+        kamarTerisiLabel = createStatCard("🏠", "Kamar Terisi", "0/0", new Color(155, 89, 182));
+        tingkatOkupasiLabel = createStatCard("📊", "Okupasi", "0%", new Color(52, 73, 94));
 
         statsPanel.add(totalPemasukanLabel);
         statsPanel.add(sudahBayarLabel);
         statsPanel.add(belumBayarLabel);
         statsPanel.add(terlambatLabel);
         statsPanel.add(kamarTerisiLabel);
-        statsPanel.add(kamarKosongLabel);
-
+        statsPanel.add(tingkatOkupasiLabel);
         panel.add(statsPanel);
-
         return panel;
     }
 
-    private JLabel createStatLabel(String icon, String title, String value, Color bgColor, Color borderColor) {
-        JLabel label = new JLabel();
-        label.setLayout(new BorderLayout(5, 5));
-        label.setOpaque(true);
-        label.setBackground(bgColor);
-        label.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(borderColor, 2),
-                new EmptyBorder(10, 10, 10, 10)
-        ));
+    private JPanel createStatCard(String icon, String title, String value, Color bg) {
+        JPanel card = new JPanel(new BorderLayout(10, 5));
+        card.setBackground(bg);
+        card.setBorder(new EmptyBorder(15, 15, 15, 15));
 
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
-        iconLabel.setForeground(Color.WHITE);
+        JLabel iconLbl = new JLabel(icon);
+        iconLbl.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
+        iconLbl.setForeground(Color.WHITE);
 
         JPanel textPanel = new JPanel();
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
         textPanel.setOpaque(false);
 
         JLabel titleLbl = new JLabel(title);
-        titleLbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        titleLbl.setForeground(Color.WHITE);
-        titleLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+        titleLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        titleLbl.setForeground(new Color(255, 255, 255, 200));
 
         JLabel valueLbl = new JLabel(value);
-        valueLbl.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        valueLbl.setFont(new Font("Segoe UI", Font.BOLD, 16));
         valueLbl.setForeground(Color.WHITE);
-        valueLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         textPanel.add(titleLbl);
         textPanel.add(valueLbl);
-
-        label.add(iconLabel, BorderLayout.WEST);
-        label.add(textPanel, BorderLayout.CENTER);
-
-        return label;
+        card.add(iconLbl, BorderLayout.WEST);
+        card.add(textPanel, BorderLayout.CENTER);
+        card.putClientProperty("valueLabel", valueLbl);
+        return card;
     }
 
     private JPanel createDetailPanel() {
@@ -241,54 +187,67 @@ public class LaporanPanel extends JPanel {
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(189, 195, 199), 2),
-                new EmptyBorder(15, 15, 15, 15)
-        ));
+                new EmptyBorder(15, 15, 15, 15)));
 
-        String bulanTahun = selectedMonth.format(
-                DateTimeFormatter.ofPattern("MMMM yyyy", new java.util.Locale("id", "ID"))
-        );
-        JLabel titleLabel = new JLabel("📋 DETAIL PEMBAYARAN " + bulanTahun.toUpperCase());
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        String bulanTahun = selectedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", LOCALE_ID));
+        JLabel titleLabel = new JLabel("DETAIL PEMBAYARAN " + bulanTahun.toUpperCase());
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
         panel.add(titleLabel, BorderLayout.NORTH);
 
-        // Table
-        String[] columns = {"No", "Nama Penyewa", "No. Kamar", "Tanggal Bayar", "Jumlah", "Status"};
+        String[] columns = {"No", "Nama", "Kamar", "Tgl Bayar", "Jumlah", "Metode", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+            public boolean isCellEditable(int row, int col) { return false; }
         };
 
         detailTable = new JTable(tableModel);
         detailTable.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        detailTable.setRowHeight(30);
-        detailTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
-        detailTable.getTableHeader().setBackground(new Color(52, 73, 94));
-        detailTable.getTableHeader().setForeground(Color.WHITE);
-        detailTable.setSelectionBackground(new Color(52, 152, 219));
-        detailTable.setSelectionForeground(Color.WHITE);
-        detailTable.setGridColor(new Color(189, 195, 199));
+        detailTable.setRowHeight(35);
+        detailTable.setShowGrid(true);
+        detailTable.setGridColor(new Color(220, 220, 220));
+        detailTable.setBackground(Color.WHITE);
 
-        // Center alignment untuk kolom tertentu
+        // PERBAIKAN HEADER - Background gelap dengan text putih tebal
+        JTableHeader header = detailTable.getTableHeader();
+        header.setBackground(new Color(44, 62, 80)); // Warna gelap
+        header.setForeground(Color.WHITE); // Text putih
+        header.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        header.setPreferredSize(new Dimension(0, 45));
+        header.setReorderingAllowed(false);
+        header.setOpaque(true);
+
+        // Custom renderer untuk header agar pasti terlihat
+        DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel label = new JLabel(value != null ? value.toString() : "");
+                label.setFont(new Font("Segoe UI", Font.BOLD, 13));
+                label.setBackground(new Color(44, 62, 80));
+                label.setForeground(Color.WHITE);
+                label.setOpaque(true);
+                label.setHorizontalAlignment(JLabel.CENTER);
+                label.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 2, 1, new Color(189, 195, 199)),
+                        BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                ));
+                return label;
+            }
+        };
+
+        for (int i = 0; i < detailTable.getColumnCount(); i++) {
+            detailTable.getColumnModel().getColumn(i).setHeaderRenderer(headerRenderer);
+        }
+
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
-        detailTable.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-        detailTable.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
-        detailTable.getColumnModel().getColumn(5).setCellRenderer(centerRenderer);
+        for (int i = 0; i < 7; i++) {
+            if (i != 1) detailTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+        detailTable.getColumnModel().getColumn(6).setCellRenderer(new StatusCellRenderer());
 
-        // Set column widths
-        detailTable.getColumnModel().getColumn(0).setPreferredWidth(50);
-        detailTable.getColumnModel().getColumn(1).setPreferredWidth(200);
-        detailTable.getColumnModel().getColumn(2).setPreferredWidth(100);
-        detailTable.getColumnModel().getColumn(3).setPreferredWidth(120);
-        detailTable.getColumnModel().getColumn(4).setPreferredWidth(120);
-        detailTable.getColumnModel().getColumn(5).setPreferredWidth(100);
-
-        JScrollPane scrollPane = new JScrollPane(detailTable);
-        scrollPane.setPreferredSize(new Dimension(0, 200));
-        panel.add(scrollPane, BorderLayout.CENTER);
-
+        JScrollPane scroll = new JScrollPane(detailTable);
+        scroll.getViewport().setBackground(Color.WHITE);
+        panel.add(scroll, BorderLayout.CENTER);
         return panel;
     }
 
@@ -297,30 +256,31 @@ public class LaporanPanel extends JPanel {
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(189, 195, 199), 2),
-                new EmptyBorder(15, 15, 15, 15)
-        ));
+                new EmptyBorder(15, 15, 15, 15)));
 
-        JLabel titleLabel = new JLabel("📊 GRAFIK PEMASUKAN (Opsional)");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        JLabel titleLabel = new JLabel("GRAFIK PEMASUKAN 6 BULAN TERAKHIR");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
         panel.add(titleLabel, BorderLayout.NORTH);
 
         grafikPanel = new JPanel() {
-            @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 drawBarChart(g);
             }
         };
         grafikPanel.setBackground(Color.WHITE);
-        grafikPanel.setPreferredSize(new Dimension(0, 200));
-
+        grafikPanel.setPreferredSize(new Dimension(0, 250));
         panel.add(grafikPanel, BorderLayout.CENTER);
 
-        JLabel noteLabel = new JLabel("[Bar chart 6 bulan terakhir]");
-        noteLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        noteLabel.setForeground(Color.GRAY);
-        panel.add(noteLabel, BorderLayout.SOUTH);
-
+        JPanel infoPanel = new JPanel(new GridLayout(2, 1));
+        infoPanel.setBackground(Color.WHITE);
+        trendLabel = new JLabel("Trend: Stabil");
+        trendLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        proyeksiLabel = new JLabel("Proyeksi: Rp 0");
+        proyeksiLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        infoPanel.add(trendLabel);
+        infoPanel.add(proyeksiLabel);
+        panel.add(infoPanel, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -328,289 +288,267 @@ public class LaporanPanel extends JPanel {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        int width = grafikPanel.getWidth();
-        int height = grafikPanel.getHeight();
-        int padding = 40;
-        int chartHeight = height - 2 * padding;
+        int w = grafikPanel.getWidth();
+        int h = grafikPanel.getHeight();
+        if (w < 100 || h < 100) return;
 
-        // Get 6 bulan terakhir data
-        Map<YearMonth, Double> monthlyData = getMonthlyData(6);
-        List<YearMonth> months = new ArrayList<>(monthlyData.keySet());
+        int pad = 50;
+        int chartH = h - pad * 2;
+        int chartW = w - pad * 2;
 
-        if (months.isEmpty()) return;
+        Map<YearMonth, Double> data = getMonthlyData(6);
+        List<YearMonth> months = new ArrayList<>(data.keySet());
+        Collections.sort(months);
 
-        int barWidth = (width - 2 * padding) / months.size() - 10;
-        double maxValue = monthlyData.values().stream().mapToDouble(Double::doubleValue).max().orElse(1000000);
-
-        // Draw bars
-        for (int i = 0; i < months.size(); i++) {
-            YearMonth month = months.get(i);
-            double value = monthlyData.get(month);
-
-            int barHeight = (int) ((value / maxValue) * chartHeight);
-            int x = padding + i * (barWidth + 10);
-            int y = height - padding - barHeight;
-
-            // Bar
-            g2d.setColor(new Color(52, 152, 219));
-            g2d.fillRect(x, y, barWidth, barHeight);
-            g2d.setColor(new Color(41, 128, 185));
-            g2d.drawRect(x, y, barWidth, barHeight);
-
-            // Month label
-            g2d.setColor(Color.BLACK);
-            g2d.setFont(new Font("Segoe UI", Font.PLAIN, 10));
-            String monthLabel = month.format(DateTimeFormatter.ofPattern("MMM yy", new java.util.Locale("id", "ID")));
-            int labelWidth = g2d.getFontMetrics().stringWidth(monthLabel);
-            g2d.drawString(monthLabel, x + (barWidth - labelWidth) / 2, height - padding + 15);
-
-            // Value label
-            String valueLabel = String.format("%.0fK", value / 1000);
-            int valueWidth = g2d.getFontMetrics().stringWidth(valueLabel);
-            g2d.drawString(valueLabel, x + (barWidth - valueWidth) / 2, y - 5);
+        if (months.isEmpty()) {
+            g2d.setColor(Color.GRAY);
+            g2d.setFont(new Font("Segoe UI", Font.ITALIC, 14));
+            String msg = "Belum ada data pembayaran";
+            FontMetrics fm = g2d.getFontMetrics();
+            g2d.drawString(msg, (w - fm.stringWidth(msg))/2, h/2);
+            return;
         }
 
-        // Draw axes
-        g2d.setColor(Color.GRAY);
-        g2d.drawLine(padding, height - padding, width - padding, height - padding); // X-axis
-        g2d.drawLine(padding, padding, padding, height - padding); // Y-axis
+        double maxVal = Collections.max(data.values());
+        if (maxVal == 0) maxVal = 1000000;
+        maxVal = Math.ceil(maxVal / 1000000) * 1000000;
+
+        // Grid
+        g2d.setColor(new Color(240, 240, 240));
+        g2d.setFont(new Font("Segoe UI", Font.PLAIN, 9));
+        for (int i = 0; i <= 5; i++) {
+            int y = h - pad - (chartH * i / 5);
+            g2d.drawLine(pad, y, w - pad, y);
+            String label = String.format("%.0fK", (maxVal * i / 5) / 1000);
+            g2d.setColor(Color.GRAY);
+            g2d.drawString(label, 5, y + 3);
+            g2d.setColor(new Color(240, 240, 240));
+        }
+
+        // Bars
+        int barW = Math.min(50, chartW / months.size() - 10);
+        int gap = (chartW - barW * months.size()) / (months.size() + 1);
+
+        for (int i = 0; i < months.size(); i++) {
+            double val = data.get(months.get(i));
+            int barH = (int)((val / maxVal) * chartH);
+            int x = pad + gap + i * (barW + gap);
+            int y = h - pad - barH;
+
+            GradientPaint gp = new GradientPaint(x, y, new Color(52, 152, 219), x, y + barH, new Color(41, 128, 185));
+            g2d.setPaint(gp);
+            g2d.fillRoundRect(x, y, barW, barH, 5, 5);
+
+            g2d.setColor(Color.BLACK);
+            g2d.setFont(new Font("Segoe UI", Font.BOLD, 9));
+            String monthLbl = months.get(i).format(DateTimeFormatter.ofPattern("MMM yy", LOCALE_ID));
+            FontMetrics fm = g2d.getFontMetrics();
+            g2d.drawString(monthLbl, x + (barW - fm.stringWidth(monthLbl))/2, h - pad + 15);
+
+            if (val > 0) {
+                String valLbl = String.format("%.0fK", val / 1000);
+                g2d.setColor(barH > 20 ? Color.WHITE : new Color(52, 152, 219));
+                g2d.drawString(valLbl, x + (barW - fm.stringWidth(valLbl))/2, barH > 20 ? y + 15 : y - 5);
+            }
+        }
+
+        // Axes
+        g2d.setColor(new Color(44, 62, 80));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawLine(pad, h - pad, w - pad, h - pad);
+        g2d.drawLine(pad, pad, pad, h - pad);
     }
 
     private void loadData() {
-        // Clear table
+        initializeData();
         tableModel.setRowCount(0);
 
-        // Calculate statistics
         int totalKamar = kamarList.size();
-        int kamarTerisi = 0;
+
+        // PERBAIKAN ALGORITMA: Hanya hitung penyewa AKTIF dan unique berdasarkan idPenyewa
+        Map<String, Penyewa> penyewaAktifMap = new HashMap<>();
+        for (Penyewa p : penyewaList) {
+            if ("Aktif".equalsIgnoreCase(p.getStatus())) {
+                // Ambil data terakhir jika ada duplicate idPenyewa (pindah kamar)
+                penyewaAktifMap.put(p.getIdPenyewa(), p);
+            }
+        }
+
+        int kamarTerisi = penyewaAktifMap.size(); // Hitung unique penyewa aktif
         int sudahBayar = 0;
         int belumBayar = 0;
         int terlambat = 0;
         double totalPemasukan = 0;
 
-        // Filter pembayaran by selected month
-        List<Pembayaran> filteredPembayaran = new ArrayList<>();
-        for (Pembayaran p : pembayaranList) {
-            LocalDate tanggal = p.tanggalBayar;
-            if (tanggal != null && YearMonth.from(tanggal).equals(selectedMonth)) {
-                filteredPembayaran.add(p);
-            }
-        }
-
-        // Count kamar terisi
-        for (Kamar k : kamarList) {
-            if (k.status.equalsIgnoreCase("Terisi")) {
-                kamarTerisi++;
-            }
-        }
-
         // Process pembayaran
-        Map<String, Boolean> penyewaBayar = new HashMap<>();
-        for (Pembayaran p : filteredPembayaran) {
-            penyewaBayar.put(p.idPenyewa, true);
-            totalPemasukan += p.jumlah;
-            sudahBayar++;
+        Map<String, Pembayaran> penyewaBayarMap = new HashMap<>();
+        for (Pembayaran pb : pembayaranList) {
+            if (pb.getTanggalBayar() != null && YearMonth.from(pb.getTanggalBayar()).equals(selectedMonth)) {
+                if ("Lunas".equalsIgnoreCase(pb.getStatus())) {
+                    penyewaBayarMap.put(pb.getIdPenyewa(), pb);
+                    totalPemasukan += pb.getJumlah();
+                    sudahBayar++;
 
-            // Add to table
-            Penyewa penyewa = findPenyewaById(p.idPenyewa);
-            String namaPenyewa = penyewa != null ? penyewa.nama : "-";
-            String noKamar = penyewa != null ? penyewa.idKamar : "-";
-
-            tableModel.addRow(new Object[]{
-                    tableModel.getRowCount() + 1,
-                    namaPenyewa,
-                    noKamar,
-                    DateUtil.formatDate(p.tanggalBayar),
-                    String.format("Rp %,.0f", p.jumlah),
-                    "✅ Lunas"
-            });
-        }
-
-        // Check untuk penyewa yang belum bayar
-        for (Penyewa penyewa : penyewaList) {
-            if (!penyewaBayar.containsKey(penyewa.idPenyewa)) {
-                belumBayar++;
-                // Check if late (lebih dari 5 hari dari tanggal 1)
-                LocalDate deadline = selectedMonth.atDay(1).plusDays(5);
-                if (LocalDate.now().isAfter(deadline)) {
-                    terlambat++;
+                    Penyewa penyewa = penyewaAktifMap.get(pb.getIdPenyewa());
+                    if (penyewa != null) {
+                        tableModel.addRow(new Object[]{
+                                tableModel.getRowCount() + 1,
+                                penyewa.getNama(),
+                                penyewa.getIdKamar(),
+                                DateUtil.formatDate(pb.getTanggalBayar()),
+                                String.format("Rp %,.0f", pb.getJumlah()),
+                                pb.getMetodeBayar(),
+                                "Lunas"
+                        });
+                    }
                 }
             }
         }
 
-        int kamarKosong = totalKamar - kamarTerisi;
+        // Check penyewa aktif yang belum bayar
+        LocalDate deadline = selectedMonth.atDay(5);
+        LocalDate now = LocalDate.now();
 
-        // Update labels
-        updateStatLabel(totalPemasukanLabel, "💰", "Total Pemasukan",
-                String.format("Rp %,.0f", totalPemasukan));
+        for (Map.Entry<String, Penyewa> entry : penyewaAktifMap.entrySet()) {
+            String idPenyewa = entry.getKey();
+            Penyewa penyewa = entry.getValue();
 
-        updateStatLabel(sudahBayarLabel, "✅", "Sudah Bayar",
-                String.format("%d penyewa (%.0f%%)", sudahBayar,
-                        kamarTerisi > 0 ? (sudahBayar * 100.0 / kamarTerisi) : 0));
+            if (!penyewaBayarMap.containsKey(idPenyewa)) {
+                belumBayar++;
 
-        updateStatLabel(belumBayarLabel, "🏆", "Belum Bayar",
-                String.format("%d penyewa", belumBayar));
+                boolean isLate = selectedMonth.isBefore(YearMonth.now()) ||
+                        (selectedMonth.equals(YearMonth.now()) && now.isAfter(deadline));
+                if (isLate) terlambat++;
 
-        updateStatLabel(terlambatLabel, "⚠", "Terlambat",
-                String.format("%d penyewa", terlambat));
+                tableModel.addRow(new Object[]{
+                        tableModel.getRowCount() + 1,
+                        penyewa.getNama(),
+                        penyewa.getIdKamar(),
+                        "-", "-", "-",
+                        isLate ? "Terlambat" : "Belum"
+                });
+            }
+        }
 
-        updateStatLabel(kamarTerisiLabel, "🏠", "Kamar Terisi",
-                String.format("%d / %d (%.0f%%)", kamarTerisi, totalKamar,
-                        totalKamar > 0 ? (kamarTerisi * 100.0 / totalKamar) : 0));
+        double okupasi = totalKamar > 0 ? (kamarTerisi * 100.0 / totalKamar) : 0;
 
-        updateStatLabel(kamarKosongLabel, "🔓", "Kamar Kosong",
-                String.format("%d kamar", kamarKosong));
+        updateCard(totalPemasukanLabel, String.format("Rp %,.0f", totalPemasukan));
+        updateCard(sudahBayarLabel, sudahBayar + " penyewa");
+        updateCard(belumBayarLabel, belumBayar + " penyewa");
+        updateCard(terlambatLabel, terlambat + " penyewa");
+        updateCard(kamarTerisiLabel, kamarTerisi + " / " + totalKamar);
+        updateCard(tingkatOkupasiLabel, String.format("%.1f%%", okupasi));
 
-        // Refresh grafik
+        updateTrend();
         grafikPanel.repaint();
     }
 
-    private void updateStatLabel(JLabel label, String icon, String title, String value) {
-        label.removeAll();
+    private void updateCard(JPanel card, String val) {
+        JLabel lbl = (JLabel) card.getClientProperty("valueLabel");
+        if (lbl != null) lbl.setText(val);
+    }
 
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
-        iconLabel.setForeground(Color.WHITE);
+    private void updateTrend() {
+        Map<YearMonth, Double> data = getMonthlyData(6);
+        List<YearMonth> months = new ArrayList<>(data.keySet());
+        Collections.sort(months);
 
-        JPanel textPanel = new JPanel();
-        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
-        textPanel.setOpaque(false);
+        if (months.size() >= 2) {
+            double now = data.get(months.get(months.size() - 1));
+            double prev = data.get(months.get(months.size() - 2));
+            double change = prev > 0 ? ((now - prev) / prev * 100) : 0;
 
-        JLabel titleLbl = new JLabel(title);
-        titleLbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        titleLbl.setForeground(Color.WHITE);
-        titleLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+            String trend = change > 5 ? "Naik " + String.format("%.1f%%", change) :
+                    change < -5 ? "Turun " + String.format("%.1f%%", Math.abs(change)) : "Stabil";
+            trendLabel.setText("Trend: " + trend);
+        } else {
+            trendLabel.setText("Trend: Stabil");
+        }
 
-        JLabel valueLbl = new JLabel(value);
-        valueLbl.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        valueLbl.setForeground(Color.WHITE);
-        valueLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        textPanel.add(titleLbl);
-        textPanel.add(valueLbl);
-
-        label.add(iconLabel, BorderLayout.WEST);
-        label.add(textPanel, BorderLayout.CENTER);
-
-        label.revalidate();
-        label.repaint();
+        double avg = data.values().stream().mapToDouble(d -> d).average().orElse(0);
+        proyeksiLabel.setText(String.format("Proyeksi: Rp %,.0f", avg));
     }
 
     private void onFilterChanged() {
-        int index = filterBulanCombo.getSelectedIndex();
-        selectedMonth = YearMonth.now().minusMonths(index);
+        selectedMonth = YearMonth.now().minusMonths(filterBulanCombo.getSelectedIndex());
     }
 
     private String[] generateBulanOptions() {
-        String[] options = new String[12];
-        YearMonth current = YearMonth.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", new java.util.Locale("id", "ID"));
-
+        String[] opts = new String[12];
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMMM yyyy", LOCALE_ID);
         for (int i = 0; i < 12; i++) {
-            YearMonth month = current.minusMonths(i);
-            options[i] = month.format(formatter);
+            opts[i] = YearMonth.now().minusMonths(i).format(fmt);
         }
-
-        return options;
+        return opts;
     }
 
     private Map<YearMonth, Double> getMonthlyData(int months) {
-        Map<YearMonth, Double> data = new HashMap<>();
-        YearMonth current = YearMonth.now();
-
+        Map<YearMonth, Double> map = new LinkedHashMap<>();
+        YearMonth now = YearMonth.now();
         for (int i = months - 1; i >= 0; i--) {
-            YearMonth month = current.minusMonths(i);
+            YearMonth m = now.minusMonths(i);
             double total = 0;
-
             for (Pembayaran p : pembayaranList) {
-                LocalDate tanggal = p.tanggalBayar;
-                if (tanggal != null && YearMonth.from(tanggal).equals(month)) {
-                    total += p.jumlah;
+                if (p.getTanggalBayar() != null && YearMonth.from(p.getTanggalBayar()).equals(m)) {
+                    if ("Lunas".equalsIgnoreCase(p.getStatus())) {
+                        total += p.getJumlah();
+                    }
                 }
             }
-
-            data.put(month, total);
+            map.put(m, total);
         }
-
-        return data;
+        return map;
     }
 
-    private void exportToPDF() {
-        JOptionPane.showMessageDialog(this,
-                "Fitur export PDF akan segera ditambahkan!",
-                "Info",
-                JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    // Data loading methods
     private List<Kamar> loadKamarData() {
         List<Kamar> list = new ArrayList<>();
         List<String> lines = FileHandler.readAllLines(FileHandler.KAMAR_FILE);
 
         for (String line : lines) {
-            String[] parts = line.split("\\|");
-            if (parts.length >= 5) {
-                Kamar k = new Kamar();
-                k.idKamar = parts[0];
-                k.nomorKamar = parts[1];
-                k.harga = Double.parseDouble(parts[2]);
-                k.fasilitas = parts[3];
-                k.status = parts[4];
-                list.add(k);
+            try {
+                // Parse format: K001,K01,Double,3000000,9 x 9 meter,...
+                String[] parts = line.split(",");
+                if (parts.length >= 7) {
+                    Kamar k = new Kamar();
+                    k.setIdKamar(parts[0].trim());
+                    k.setNomorKamar(parts[1].trim());
+                    k.setTipe(parts[2].trim());
+                    k.setHarga(Double.parseDouble(parts[3].trim()));
+                    k.setUkuran(parts[4].trim());
+                    k.setFasilitas(parts[5].trim());
+                    k.setStatus(parts[6].trim());
+                    if (parts.length > 7) {
+                        k.setImagePath(parts[parts.length - 1].trim());
+                    }
+                    list.add(k);
+                }
+            } catch (Exception e) {
+                System.err.println("Error parsing kamar: " + line);
             }
         }
 
+        System.out.println("Loaded " + list.size() + " kamar");
         return list;
     }
 
     private List<Penyewa> loadPenyewaData() {
         List<Penyewa> list = new ArrayList<>();
-        List<String> lines = FileHandler.readAllLines(FileHandler.PENYEWA_FILE);
-
-        for (String line : lines) {
-            String[] parts = line.split("\\|");
-            if (parts.length >= 6) {
-                Penyewa p = new Penyewa();
-                p.idPenyewa = parts[0];
-                p.nama = parts[1];
-                p.noTelepon = parts[2];
-                p.idKamar = parts[3];
-                p.tanggalMasuk = DateUtil.parseDate(parts[4]);
-                p.status = parts[5];
-                list.add(p);
-            }
+        for (String line : FileHandler.readAllLines(FileHandler.PENYEWA_FILE)) {
+            Penyewa p = Penyewa.fromFileString(line);
+            if (p != null) list.add(p);
         }
-
+        System.out.println("Loaded " + list.size() + " penyewa records");
         return list;
     }
 
     private List<Pembayaran> loadPembayaranData() {
         List<Pembayaran> list = new ArrayList<>();
-        List<String> lines = FileHandler.readAllLines(FileHandler.PEMBAYARAN_FILE);
-
-        for (String line : lines) {
-            String[] parts = line.split("\\|");
-            if (parts.length >= 5) {
-                Pembayaran p = new Pembayaran();
-                p.idPembayaran = parts[0];
-                p.idPenyewa = parts[1];
-                p.tanggalBayar = DateUtil.parseDate(parts[2]);
-                p.jumlah = Double.parseDouble(parts[3]);
-                p.status = parts[4];
-                list.add(p);
-            }
+        for (String line : FileHandler.readAllLines(FileHandler.PEMBAYARAN_FILE)) {
+            Pembayaran p = Pembayaran.fromFileString(line);
+            if (p != null) list.add(p);
         }
-
+        System.out.println("Loaded " + list.size() + " pembayaran");
         return list;
-    }
-
-    private Penyewa findPenyewaById(String id) {
-        for (Penyewa p : penyewaList) {
-            if (p.idPenyewa.equals(id)) {
-                return p;
-            }
-        }
-        return null;
     }
 
     public void refresh() {
@@ -619,43 +557,29 @@ public class LaporanPanel extends JPanel {
     }
 
     public void refreshData() {
-        initializeData();
-        loadData();
+        refresh();
     }
 
-    // ============= INNER CLASSES - MODEL =============
-
-    /**
-     * Model class untuk Kamar
-     */
-    private static class Kamar {
-        String idKamar;
-        String nomorKamar;
-        double harga;
-        String fasilitas;
-        String status; // "Terisi" atau "Kosong"
-    }
-
-    /**
-     * Model class untuk Penyewa
-     */
-    private static class Penyewa {
-        String idPenyewa;
-        String nama;
-        String noTelepon;
-        String idKamar;
-        LocalDate tanggalMasuk;
-        String status; // "Aktif" atau "Keluar"
-    }
-
-    /**
-     * Model class untuk Pembayaran
-     */
-    private static class Pembayaran {
-        String idPembayaran;
-        String idPenyewa;
-        LocalDate tanggalBayar;
-        double jumlah;
-        String status; // "Lunas" atau "Belum"
+    private static class StatusCellRenderer extends DefaultTableCellRenderer {
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus, int row, int col) {
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
+            setHorizontalAlignment(CENTER);
+            setFont(new Font("Segoe UI", Font.BOLD, 11));
+            if (!isSelected) {
+                String s = value.toString();
+                if (s.contains("Lunas")) {
+                    setBackground(new Color(46, 204, 113, 80));
+                    setForeground(new Color(39, 174, 96));
+                } else if (s.contains("Terlambat")) {
+                    setBackground(new Color(231, 76, 60, 80));
+                    setForeground(new Color(192, 57, 43));
+                } else {
+                    setBackground(new Color(241, 196, 15, 80));
+                    setForeground(new Color(243, 156, 18));
+                }
+            }
+            return c;
+        }
     }
 }

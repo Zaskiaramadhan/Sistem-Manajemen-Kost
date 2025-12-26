@@ -58,7 +58,7 @@ public class PenyewaPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(ColorPalette.BG_OFF_WHITE);
 
-        JLabel titleLabel = new JLabel("KELOLA PENYEWA");
+        JLabel titleLabel = new JLabel("Kelola Penyewa");
         titleLabel.setFont(FontManager.FONT_H1);
         titleLabel.setForeground(ColorPalette.NAVY_DARK);
 
@@ -81,12 +81,7 @@ public class PenyewaPanel extends JPanel {
         filterLabel.setFont(FontManager.FONT_BODY);
         filterLabel.setForeground(ColorPalette.GRAY_DARK);
 
-        String[] filterOptions = {
-                "Semua Status",
-                "Sudah Bayar",
-                "Belum Bayar",
-                "Terlambat"
-        };
+        String[] filterOptions = {"Semua Status", "Sudah Bayar", "Belum Bayar", "Terlambat"};
         filterComboBox = new JComboBox<>(filterOptions);
         filterComboBox.setFont(FontManager.FONT_BODY);
         filterComboBox.addActionListener(e -> filterAndRefresh());
@@ -117,40 +112,32 @@ public class PenyewaPanel extends JPanel {
         ));
 
         Kamar kamar = kamarDAO.getById(penyewa.getIdKamar());
-        if (kamar == null) {
-            return card;
-        }
+        if (kamar == null) return card;
 
-        // Info Panel
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
         infoPanel.setBackground(Color.WHITE);
 
-        // ID
         JLabel idLabel = new JLabel(penyewa.getIdPenyewa());
         idLabel.setFont(FontManager.FONT_H4);
         idLabel.setForeground(ColorPalette.GRAY_DARK);
         idLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Nama
         JLabel namaLabel = new JLabel(penyewa.getNama());
         namaLabel.setFont(FontManager.FONT_H3);
         namaLabel.setForeground(ColorPalette.NAVY_DARK);
         namaLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Kamar
         JLabel kamarLabel = new JLabel("Kamar: " + kamar.getNomorKamar());
         kamarLabel.setFont(FontManager.FONT_BODY);
         kamarLabel.setForeground(ColorPalette.GRAY_DARK);
         kamarLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // No HP
         JLabel hpLabel = new JLabel("HP: " + penyewa.getNoHp());
         hpLabel.setFont(FontManager.FONT_BODY);
         hpLabel.setForeground(ColorPalette.GRAY_DARK);
         hpLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Status Pembayaran
         String bulanIni = DateUtil.getCurrentMonthYear();
         boolean sudahBayar = pembayaranDAO.isPaid(penyewa.getIdPenyewa(), bulanIni);
         LocalDate today = LocalDate.now();
@@ -182,7 +169,6 @@ public class PenyewaPanel extends JPanel {
 
         card.add(infoPanel, BorderLayout.CENTER);
 
-        // Button Panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
         buttonPanel.setBackground(Color.WHITE);
 
@@ -190,7 +176,6 @@ public class PenyewaPanel extends JPanel {
         detailButton.addActionListener(e -> showDetailDialog(penyewa));
 
         buttonPanel.add(detailButton);
-
         card.add(buttonPanel, BorderLayout.SOUTH);
 
         return card;
@@ -227,14 +212,10 @@ public class PenyewaPanel extends JPanel {
                 boolean terlambat = !sudahBayar && today.getDayOfMonth() > 5;
 
                 switch (filterOption) {
-                    case "Sudah Bayar":
-                        return !sudahBayar;
-                    case "Belum Bayar":
-                        return sudahBayar || terlambat;
-                    case "Terlambat":
-                        return !terlambat;
-                    default:
-                        return false;
+                    case "Sudah Bayar": return !sudahBayar;
+                    case "Belum Bayar": return sudahBayar || terlambat;
+                    case "Terlambat": return !terlambat;
+                    default: return false;
                 }
             });
         }
@@ -244,11 +225,9 @@ public class PenyewaPanel extends JPanel {
 
     private void displayCards(List<Penyewa> penyewaList) {
         cardContainer.removeAll();
-
         for (Penyewa penyewa : penyewaList) {
             cardContainer.add(createPenyewaCard(penyewa));
         }
-
         cardContainer.revalidate();
         cardContainer.repaint();
     }
@@ -258,7 +237,7 @@ public class PenyewaPanel extends JPanel {
         if (kamar == null) return;
 
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Detail Penyewa", true);
-        dialog.setSize(500, 450);
+        dialog.setSize(500, 500);
         dialog.setLocationRelativeTo(this);
 
         JPanel mainPanel = new JPanel();
@@ -340,75 +319,170 @@ public class PenyewaPanel extends JPanel {
         return row;
     }
 
+    private JPanel createStyledFormField(String label, JComponent field) {
+        JPanel panel = new JPanel(new BorderLayout(8, 6));
+        panel.setBackground(Color.WHITE);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 75));
+
+        JLabel jLabel = new JLabel(label);
+        jLabel.setFont(FontManager.FONT_BODY_LARGE);
+        jLabel.setForeground(ColorPalette.GRAY_DARK);
+
+        if (field instanceof JTextField) {
+            ((JTextField) field).setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(ColorPalette.GRAY_MEDIUM, 1),
+                    BorderFactory.createEmptyBorder(8, 12, 8, 12)
+            ));
+            field.setPreferredSize(new Dimension(0, 40));
+        } else if (field instanceof JComboBox) {
+            ((JComboBox<?>) field).setFont(FontManager.FONT_BODY);
+            field.setPreferredSize(new Dimension(0, 40));
+        }
+
+        panel.add(jLabel, BorderLayout.NORTH);
+        panel.add(field, BorderLayout.CENTER);
+
+        return panel;
+    }
+
     private void showAddDialog() {
         List<Kamar> availableRooms = kamarDAO.getAvailableRooms();
         if (availableRooms.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "Tidak ada kamar tersedia!",
-                    "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Tidak ada kamar tersedia!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Tambah Penyewa", true);
-        dialog.setSize(500, 450);
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Tambah Penyewa Baru", true);
+        dialog.setSize(550, 580);
         dialog.setLocationRelativeTo(this);
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        panel.setBackground(Color.WHITE);
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
+        mainPanel.setBackground(Color.WHITE);
 
-        JTextField namaField = new JTextField();
-        JTextField noHpField = new JTextField();
+        JLabel headerLabel = new JLabel("FORM PENYEWA BARU");
+        headerLabel.setFont(FontManager.FONT_H2);
+        headerLabel.setForeground(ColorPalette.NAVY_DARK);
+        headerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        mainPanel.add(headerLabel);
+        mainPanel.add(Box.createVerticalStrut(8));
+
+        JSeparator sep = new JSeparator();
+        sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
+        mainPanel.add(sep);
+        mainPanel.add(Box.createVerticalStrut(20));
 
         JComboBox<String> kamarCombo = new JComboBox<>();
+        kamarCombo.setFont(FontManager.FONT_BODY);
         for (Kamar kamar : availableRooms) {
             kamarCombo.addItem(kamar.getNomorKamar() + " - " + kamar.getTipe());
         }
 
+        JTextField idField = new JTextField();
+        idField.setEditable(false);
+        idField.setBackground(ColorPalette.BG_LIGHT_BLUE);
+        idField.setFont(FontManager.FONT_BODY.deriveFont(Font.BOLD));
+        idField.setForeground(ColorPalette.NAVY_DARK);
+
+        kamarCombo.addActionListener(e -> {
+            if (kamarCombo.getSelectedItem() != null) {
+                String selected = (String) kamarCombo.getSelectedItem();
+                String nomorKamar = selected.split(" - ")[0].trim();
+                for (Kamar k : availableRooms) {
+                    if (k.getNomorKamar().equals(nomorKamar)) {
+                        String newId = penyewaDAO.generateIdFromKamar(k.getIdKamar());
+                        idField.setText(newId);
+                        break;
+                    }
+                }
+            }
+        });
+
+        if (kamarCombo.getItemCount() > 0) {
+            kamarCombo.setSelectedIndex(0);
+        }
+
+        JTextField namaField = new JTextField();
+        namaField.setFont(FontManager.FONT_BODY);
+
+        JTextField noHpField = new JTextField();
+        noHpField.setFont(FontManager.FONT_BODY);
+
         JTextField tanggalField = new JTextField(DateUtil.formatDate(LocalDate.now()));
+        tanggalField.setFont(FontManager.FONT_BODY);
 
-        panel.add(createFormField("Nama Lengkap:", namaField));
-        panel.add(createFormField("No HP:", noHpField));
-        panel.add(createFormField("Pilih Kamar:", kamarCombo));
-        panel.add(createFormField("Tanggal Masuk (dd/MM/yyyy):", tanggalField));
+        mainPanel.add(createStyledFormField("Pilih Kamar:", kamarCombo));
+        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(createStyledFormField("ID Penyewa (Auto):", idField));
+        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(createStyledFormField("Nama Lengkap:", namaField));
+        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(createStyledFormField("No HP:", noHpField));
+        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(createStyledFormField("Tanggal Masuk:", tanggalField));
+        mainPanel.add(Box.createVerticalStrut(25));
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+
+        RButton cancelButton = new RButton("Batal", RButton.ButtonType.SECONDARY);
+        cancelButton.addActionListener(e -> dialog.dispose());
 
         RButton saveButton = new RButton("Simpan");
         saveButton.addActionListener(e -> {
-            if (validateAndSavePenyewa(namaField, noHpField, kamarCombo, tanggalField, null, availableRooms)) {
+            if (validateAndSaveNewPenyewa(idField, namaField, noHpField, kamarCombo, tanggalField, availableRooms)) {
                 dialog.dispose();
                 refreshData();
             }
         });
 
-        RButton cancelButton = new RButton("Batal", RButton.ButtonType.SECONDARY);
-        cancelButton.addActionListener(e -> dialog.dispose());
-
         buttonPanel.add(cancelButton);
         buttonPanel.add(saveButton);
-        panel.add(buttonPanel);
+        mainPanel.add(buttonPanel);
 
-        dialog.add(panel);
+        dialog.add(mainPanel);
         dialog.setVisible(true);
     }
 
     private void showEditDialog(Penyewa penyewa) {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Edit Penyewa", true);
-        dialog.setSize(500, 450);
+        dialog.setSize(550, 580);
         dialog.setLocationRelativeTo(this);
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        panel.setBackground(Color.WHITE);
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
+        mainPanel.setBackground(Color.WHITE);
+
+        JLabel headerLabel = new JLabel("EDIT DATA PENYEWA");
+        headerLabel.setFont(FontManager.FONT_H2);
+        headerLabel.setForeground(ColorPalette.NAVY_DARK);
+        headerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        mainPanel.add(headerLabel);
+        mainPanel.add(Box.createVerticalStrut(8));
+
+        JSeparator sep = new JSeparator();
+        sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
+        mainPanel.add(sep);
+        mainPanel.add(Box.createVerticalStrut(20));
+
+        JTextField idField = new JTextField(penyewa.getIdPenyewa());
+        idField.setEditable(false);
+        idField.setBackground(ColorPalette.BG_LIGHT_BLUE);
+        idField.setFont(FontManager.FONT_BODY.deriveFont(Font.BOLD));
+        idField.setForeground(ColorPalette.NAVY_DARK);
 
         JTextField namaField = new JTextField(penyewa.getNama());
+        namaField.setFont(FontManager.FONT_BODY);
+
         JTextField noHpField = new JTextField(penyewa.getNoHp());
+        noHpField.setFont(FontManager.FONT_BODY);
 
         JComboBox<String> kamarCombo = new JComboBox<>();
+        kamarCombo.setFont(FontManager.FONT_BODY);
+
         Kamar currentKamar = kamarDAO.getById(penyewa.getIdKamar());
         kamarCombo.addItem(currentKamar.getNomorKamar() + " - " + currentKamar.getTipe() + " (Current)");
 
@@ -418,54 +492,109 @@ public class PenyewaPanel extends JPanel {
         }
 
         JTextField tanggalField = new JTextField(DateUtil.formatDate(penyewa.getTanggalMasuk()));
+        tanggalField.setFont(FontManager.FONT_BODY);
 
-        panel.add(createFormField("Nama Lengkap:", namaField));
-        panel.add(createFormField("No HP:", noHpField));
-        panel.add(createFormField("Kamar:", kamarCombo));
-        panel.add(createFormField("Tanggal Masuk:", tanggalField));
+        mainPanel.add(createStyledFormField("ID Penyewa:", idField));
+        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(createStyledFormField("Nama Lengkap:", namaField));
+        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(createStyledFormField("No HP:", noHpField));
+        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(createStyledFormField("Kamar:", kamarCombo));
+        mainPanel.add(Box.createVerticalStrut(5));
+        mainPanel.add(createStyledFormField("Tanggal Masuk:", tanggalField));
+        mainPanel.add(Box.createVerticalStrut(25));
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
 
-        RButton saveButton = new RButton("Simpan");
+        RButton cancelButton = new RButton("Batal", RButton.ButtonType.SECONDARY);
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        RButton saveButton = new RButton("Simpan Perubahan");
         saveButton.addActionListener(e -> {
-            if (validateAndSavePenyewa(namaField, noHpField, kamarCombo, tanggalField, penyewa.getIdPenyewa(), availableRooms)) {
+            if (validateAndUpdatePenyewa(idField, namaField, noHpField, kamarCombo, tanggalField, penyewa.getIdPenyewa(), availableRooms)) {
                 dialog.dispose();
                 refreshData();
             }
         });
 
-        RButton cancelButton = new RButton("Batal", RButton.ButtonType.SECONDARY);
-        cancelButton.addActionListener(e -> dialog.dispose());
-
         buttonPanel.add(cancelButton);
         buttonPanel.add(saveButton);
-        panel.add(buttonPanel);
+        mainPanel.add(buttonPanel);
 
-        dialog.add(panel);
+        dialog.add(mainPanel);
         dialog.setVisible(true);
     }
 
-    private void deletePenyewa(Penyewa penyewa) {
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Hapus penyewa " + penyewa.getNama() + "?\nStatus kamar akan berubah menjadi Tersedia.",
-                "Konfirmasi Hapus",
-                JOptionPane.YES_NO_OPTION);
+    private boolean validateAndSaveNewPenyewa(JTextField idField, JTextField namaField, JTextField noHpField,
+                                              JComboBox<String> kamarCombo, JTextField tanggalField,
+                                              List<Kamar> availableRooms) {
+        String nama = namaField.getText().trim();
+        String noHp = noHpField.getText().trim();
+        String tanggalStr = tanggalField.getText().trim();
+        String idPenyewa = idField.getText().trim();
 
-        if (confirm == JOptionPane.YES_OPTION) {
-            if (penyewaDAO.delete(penyewa.getIdPenyewa())) {
-                JOptionPane.showMessageDialog(this, "Penyewa berhasil dihapus!");
-                refreshData();
-            } else {
-                JOptionPane.showMessageDialog(this, "Gagal menghapus penyewa!", "Error", JOptionPane.ERROR_MESSAGE);
+        if (!ValidationUtil.isNotEmpty(nama) || !ValidationUtil.isNotEmpty(noHp)) {
+            JOptionPane.showMessageDialog(this, "Nama dan No HP harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        if (!ValidationUtil.isValidPhone(noHp)) {
+            JOptionPane.showMessageDialog(this, "Format nomor HP tidak valid!", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        LocalDate tanggalMasuk = DateUtil.parseDate(tanggalStr);
+        if (tanggalMasuk == null) {
+            JOptionPane.showMessageDialog(this, "Format tanggal tidak valid! Gunakan dd/MM/yyyy", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        String selectedKamar = (String) kamarCombo.getSelectedItem();
+        if (selectedKamar == null || selectedKamar.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Pilih kamar terlebih dahulu!", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        String nomorKamar = selectedKamar.split(" - ")[0].trim();
+        Kamar kamar = null;
+        for (Kamar k : availableRooms) {
+            if (k.getNomorKamar().equals(nomorKamar)) {
+                kamar = k;
+                break;
             }
+        }
+
+        if (kamar == null) {
+            JOptionPane.showMessageDialog(this, "Kamar tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        Penyewa penyewa = new Penyewa();
+        penyewa.setIdPenyewa(idPenyewa);
+        penyewa.setNama(nama);
+        penyewa.setNoHp(noHp);
+        penyewa.setEmail("");
+        penyewa.setIdKamar(kamar.getIdKamar());
+        penyewa.setTanggalMasuk(tanggalMasuk);
+        penyewa.setStatus("Aktif");
+
+        boolean success = penyewaDAO.create(penyewa);
+
+        if (success) {
+            JOptionPane.showMessageDialog(this, "Penyewa baru berhasil ditambahkan!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            return true;
+        } else {
+            JOptionPane.showMessageDialog(this, "Gagal menambahkan penyewa! Kamar mungkin sudah terisi.", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
         }
     }
 
-    private boolean validateAndSavePenyewa(JTextField namaField, JTextField noHpField,
-                                           JComboBox<String> kamarCombo, JTextField tanggalField,
-                                           String editId, List<Kamar> availableRooms) {
-
+    private boolean validateAndUpdatePenyewa(JTextField idField, JTextField namaField, JTextField noHpField,
+                                             JComboBox<String> kamarCombo, JTextField tanggalField,
+                                             String oldIdPenyewa, List<Kamar> availableRooms) {
         String nama = namaField.getText().trim();
         String noHp = noHpField.getText().trim();
         String tanggalStr = tanggalField.getText().trim();
@@ -492,104 +621,61 @@ public class PenyewaPanel extends JPanel {
             return false;
         }
 
-        // Parse nomor kamar dari combo box
-        // Format: "K01 - Double" atau "K01 - Double (Current)"
-        String nomorKamar = selectedKamar.split(" - ")[0].trim();
-
         Kamar kamar = null;
 
-        if (editId != null) {
-            // Mode EDIT
-            if (selectedKamar.contains("(Current)")) {
-                // Masih pakai kamar yang sama
-                Penyewa oldPenyewa = penyewaDAO.getById(editId);
-                if (oldPenyewa != null) {
-                    kamar = kamarDAO.getById(oldPenyewa.getIdKamar());
-                }
-            } else {
-                // Pindah ke kamar baru
-                for (Kamar k : availableRooms) {
-                    if (k.getNomorKamar().equals(nomorKamar)) {
-                        kamar = k;
-                        break;
-                    }
-                }
+        if (selectedKamar.contains("(Current)")) {
+            Penyewa oldPenyewa = penyewaDAO.getById(oldIdPenyewa);
+            if (oldPenyewa != null) {
+                kamar = kamarDAO.getById(oldPenyewa.getIdKamar());
             }
         } else {
-            // Mode TAMBAH BARU
-            // Cari di availableRooms berdasarkan nomor kamar
+            String nomorKamar = selectedKamar.split(" - ")[0].trim();
             for (Kamar k : availableRooms) {
                 if (k.getNomorKamar().equals(nomorKamar)) {
                     kamar = k;
                     break;
                 }
             }
-
-            // Debug: print info untuk troubleshooting
-            System.out.println("=== DEBUG INFO ===");
-            System.out.println("Selected from combo: " + selectedKamar);
-            System.out.println("Parsed nomor kamar: " + nomorKamar);
-            System.out.println("Available rooms count: " + availableRooms.size());
-            System.out.println("Available rooms:");
-            for (Kamar k : availableRooms) {
-                System.out.println("  - " + k.getNomorKamar() + " (" + k.getTipe() + ")");
-            }
-            System.out.println("Kamar found: " + (kamar != null ? kamar.getNomorKamar() : "NULL"));
-            System.out.println("==================");
         }
 
         if (kamar == null) {
-            JOptionPane.showMessageDialog(this,
-                    "Kamar tidak ditemukan atau tidak tersedia!\n" +
-                            "Nomor kamar yang dicari: " + nomorKamar + "\n" +
-                            "Pilihan di combo: " + selectedKamar,
-                    "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Kamar tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
 
         Penyewa penyewa = new Penyewa();
-        penyewa.setIdPenyewa(editId != null ? editId : penyewaDAO.generateNewId());
+        penyewa.setIdPenyewa(oldIdPenyewa);
         penyewa.setNama(nama);
         penyewa.setNoHp(noHp);
-        penyewa.setEmail(""); // Email dihapus sesuai permintaan
+        penyewa.setEmail("");
         penyewa.setIdKamar(kamar.getIdKamar());
         penyewa.setTanggalMasuk(tanggalMasuk);
         penyewa.setStatus("Aktif");
 
-        boolean success = editId != null ? penyewaDAO.update(penyewa) : penyewaDAO.create(penyewa);
+        boolean success = penyewaDAO.update(penyewa);
 
         if (success) {
-            JOptionPane.showMessageDialog(this,
-                    editId != null ? "Penyewa berhasil diupdate!" : "Penyewa berhasil ditambahkan!");
+            JOptionPane.showMessageDialog(this, "Data penyewa berhasil diupdate!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
             return true;
         } else {
-            JOptionPane.showMessageDialog(this, "Gagal menyimpan penyewa!", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Gagal mengupdate penyewa! Kamar baru mungkin sudah terisi.", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
     }
 
-    private JPanel createFormField(String label, JComponent field) {
-        JPanel panel = new JPanel(new BorderLayout(10, 5));
-        panel.setBackground(Color.WHITE);
-        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+    private void deletePenyewa(Penyewa penyewa) {
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Hapus penyewa " + penyewa.getNama() + "?\nStatus kamar akan berubah menjadi Tersedia.",
+                "Konfirmasi Hapus", JOptionPane.YES_NO_OPTION);
 
-        JLabel jLabel = new JLabel(label);
-        jLabel.setFont(FontManager.FONT_BODY);
-        jLabel.setForeground(ColorPalette.GRAY_DARK);
-
-        if (field instanceof JTextField) {
-            ((JTextField) field).setFont(FontManager.FONT_BODY);
-            ((JTextField) field).setBorder(AppConfig.createInputBorder());
-            field.setPreferredSize(new Dimension(0, AppConfig.INPUT_HEIGHT));
-        } else if (field instanceof JComboBox) {
-            ((JComboBox<?>) field).setFont(FontManager.FONT_BODY);
-            field.setPreferredSize(new Dimension(0, AppConfig.INPUT_HEIGHT));
+        if (confirm == JOptionPane.YES_OPTION) {
+            if (penyewaDAO.delete(penyewa.getIdPenyewa())) {
+                JOptionPane.showMessageDialog(this, "Penyewa berhasil dihapus!");
+                refreshData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Gagal menghapus penyewa!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
-
-        panel.add(jLabel, BorderLayout.NORTH);
-        panel.add(field, BorderLayout.CENTER);
-
-        return panel;
     }
 
     public void refreshData() {
